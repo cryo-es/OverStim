@@ -1,0 +1,24 @@
+If you're opening this in Notepad:
+It's easier to read with Word Wrap enabled.
+Click Format > Word Wrap.
+
+Before running the exe for the first time:
+Open config.ini and toggle off any features you don't want. Some features are off by default.
+Feel free to tweak any of the settings as desired.
+
+Settings you might want to change:
+SCREEN_WIDTH = 2560 (if your monitor is 2560x1440, or set some other value as per your monitor)
+SCREEN_HEIGHT = 1440 (if your monitor is 2560x1440, or set some other value as per your monitor)
+
+Notes:
+We have an OverStim channel in this server: https://discord.gg/AVpcVhQQhu
+You can submit bugs via that channel, or via the GitHub issues.
+I am also very open to feature requests.
+Check out the pinned message in the discord channel to see my future plans.
+
+Known Issues:
+- Tab can be abused to re-trigger detection multiple times on the same elimination/assist message.
+- Poor detection of Mercy's heal beam at 2560x1440p.
+- Probably doesn't work at aspect ratios other than 16:9.
+- High latency to the game server causes Mercy's beam to reconnect to people slower when switching beam types. This can cause temporary gaps in vibration.
+- Only works on Windows.
