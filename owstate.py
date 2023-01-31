@@ -19,6 +19,7 @@ class OverwatchStateTracker:
 			"damage_beam",
 			]
 		self.owcv = ComputerVision(coords, to_mask, final_resolution)
+		# Must implement change_hero method, to zero all hero related values of the old hero.
 		self.hero = "Other"
 		self.in_killcam = False
 		self.death_spectating = False
@@ -45,8 +46,10 @@ class OverwatchStateTracker:
 		if not self.in_killcam:
 			self.death_spectating = self.owcv.detect_single("death_spec")
 		player_is_alive = not (self.in_killcam or self.death_spectating)
-		
+
 		if player_is_alive:
+			if self.is_dead:
+				self.is_dead = False
 			self.elim_notifs = self.owcv.detect_multiple("elimination")
 			self.assist_notifs = self.owcv.detect_multiple("assist")
 			self.saved_notifs = self.owcv.detect_multiple("saved")
