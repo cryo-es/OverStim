@@ -322,7 +322,8 @@ async def main():
         layout.insert(0, [sg.Multiline(size=(60,15), disabled=True, reroute_stdout=True, autoscroll=True)])
     window = sg.Window("OverStim", layout, finalize=True)
     window["-HERO_SELECTOR-"].update("Other")
-    print("This output window can be disabled in the config, but for pre-releases please leave it enabled so you have it when reporting bugs.")
+    print("Ensure you read READ_BEFORE_USING.txt before using this program.")
+    print("This output window can be disabled in the config, but for pre-releases please leave it enabled so you have it when reporting bugs.\n-")
 
     # Connect to Intiface
     if not config_fault[0]:
