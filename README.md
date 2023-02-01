@@ -8,9 +8,13 @@ Requires [Intiface Central](https://intiface.com/central/)  if you want to use i
 Default settings:
 - **Elimination:** +30% intensity for 6 seconds
 - **Assist:** +15% intensity for 3 seconds
-- **Resurrect:** +100% intensity for 4 seconds
-- **Heal beam:** +10% intensity while active
-- **Damage boost beam:** +30% intensity while active
+- **Mercy:**
+  - **Resurrect:** +100% intensity for 4 seconds
+  - **Heal beam:** +10% intensity while active
+  - **Damage boost beam:** +30% intensity while active
+- **Zenyatta:**
+  - **Harmony orb:** +15% intensity while active
+  - **Discord orb:** +20% intensity while active
 
 Known Issues:
 - Poor detection of Mercy's heal beam at 2560x1440p.
