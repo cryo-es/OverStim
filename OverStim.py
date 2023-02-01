@@ -57,7 +57,7 @@ async def alter_intensity(amount):
             device = client.devices[device_id]
             for actuator in device.actuators:
                 await device.actuators[0].command(real_intensity)
-            print(f"Updated intensity for {device.name}")
+            #print(f"Updated intensity for {device.name}")
         except Exception as err:
             await device.stop()
             print("An error occured when altering the vibration of a device.")
@@ -99,9 +99,14 @@ async def run_overstim():
         VIBE_FOR_MERCY_BEAM = config["OverStim"].getboolean("VIBE_FOR_MERCY_BEAM")
         HEAL_BEAM_VIBE_INTENSITY = config["OverStim"].getfloat("HEAL_BEAM_VIBE_INTENSITY")
         DAMAGE_BEAM_VIBE_INTENSITY = config["OverStim"].getfloat("DAMAGE_BEAM_VIBE_INTENSITY")
+        VIBE_FOR_HARMONY_ORB = config["OverStim"].getboolean("VIBE_FOR_HARMONY_ORB")
+        HARMONY_ORB_VIBE_INTENSITY = config["OverStim"].getfloat("HARMONY_ORB_VIBE_INTENSITY")
+        VIBE_FOR_DISCORD_ORB = config["OverStim"].getboolean("VIBE_FOR_DISCORD_ORB")
+        DISCORD_ORB_VIBE_INTENSITY = config["OverStim"].getfloat("DISCORD_ORB_VIBE_INTENSITY")
         DEAD_REFRESH_DELAY = config["OverStim"].getfloat("DEAD_REFRESH_DELAY")
         MAX_REFRESH_RATE = config["OverStim"].getint("MAX_REFRESH_RATE")
-        BEAM_DISCONNECT_BUFFER = config["OverStim"].getint("BEAM_DISCONNECT_BUFFER")
+        MERCY_BEAM_DISCONNECT_BUFFER = config["OverStim"].getint("MERCY_BEAM_DISCONNECT_BUFFER")
+        ZEN_ORB_DISCONNECT_BUFFER = config["OverStim"].getint("ZEN_ORB_DISCONNECT_BUFFER")
     except Exception as err:
         config_fault[0] = True
         config_fault[1] = err
@@ -109,10 +114,13 @@ async def run_overstim():
     # Initialize variables
     if not config_fault[0]:
         player = OverwatchStateTracker({"width":SCREEN_WIDTH, "height":SCREEN_HEIGHT})
-        player.neg_required_confs = BEAM_DISCONNECT_BUFFER
+        player.neg_required_confs = MERCY_BEAM_DISCONNECT_BUFFER
+        player.zen_orb_neg_confs = ZEN_ORB_DISCONNECT_BUFFER
     heal_beam_vibe_active = False
     damage_beam_vibe_active = False
     being_beamed_vibe_active = False
+    harmony_orb_vibe_active = False
+    discord_orb_vibe_active = False
     last_refresh = 0
     device_count = 0
 
@@ -240,6 +248,27 @@ async def run_overstim():
                                 await alter_intensity(-DAMAGE_BEAM_VIBE_INTENSITY)
                                 damage_beam_vibe_active = False
 
+                    elif player.hero == "Zenyatta":
+                        if VIBE_FOR_HARMONY_ORB:
+                            #TODO: Turn some of these ifs inside out
+                            if harmony_orb_vibe_active:
+                                if not player.harmony_orb:
+                                    await alter_intensity(-HARMONY_ORB_VIBE_INTENSITY)
+                                    harmony_orb_vibe_active = False
+                            else:
+                                if player.harmony_orb:
+                                    await alter_intensity(HARMONY_ORB_VIBE_INTENSITY)
+                                    harmony_orb_vibe_active = True
+                        if VIBE_FOR_DISCORD_ORB:
+                            if discord_orb_vibe_active:
+                                if not player.discord_orb:
+                                    await alter_intensity(-DISCORD_ORB_VIBE_INTENSITY)
+                                    discord_orb_vibe_active = False
+                            else:
+                                if player.discord_orb:
+                                    await alter_intensity(DISCORD_ORB_VIBE_INTENSITY)
+                                    discord_orb_vibe_active = True
+
                 event, values = window.read(timeout=1)
                 if event == sg.WIN_CLOSED or event == "Quit":
                     window.close()
@@ -277,7 +306,7 @@ async def main():
 
     # Define constants
     OUTPUT_WINDOW_ENABLED = True
-    HEROES = ["Other", "Mercy"]
+    HEROES = ["Other", "Mercy", "Zenyatta"]
     #HEROES = ["D.Va", "Doomfist", "Junker Queen", "Orisa", "Rammatra", "Reinhardt", "Roadhog", "Sigma", "Winston", "Wrecking Ball", "Zarya", "Ashe", "Bastion", "Cassidy", "Echo", "Genji", "Hanzo", "Junkrat", "Mei", "Pharah", "Reaper", "Sojourn", "Soldier: 76", "Sombra", "Symmetra", "Torbjorn", "Tracer", "Widowmaker", "Ana", "Baptiste", "Brigitte", "Kiriko", "Lucio", "Mercy", "Moira", "Zenyatta"]
     try:
         OUTPUT_WINDOW_ENABLED = config["OverStim"].getboolean("OUTPUT_WINDOW_ENABLED")
