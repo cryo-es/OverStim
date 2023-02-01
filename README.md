@@ -13,7 +13,6 @@ Default settings:
 - **Damage boost beam:** +30% intensity while active
 
 Known Issues:
-- Tab can be abused to re-trigger detection multiple times on the same elimination/assist message.
 - Poor detection of Mercy's heal beam at 2560x1440p.
 - Probably doesn't work at aspect ratios other than 16:9.
 - High latency to the game server causes Mercy's beam to reconnect to people slower when switching beam types. This can cause temporary gaps in vibration.
