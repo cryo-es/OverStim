@@ -5,7 +5,7 @@ Controls your vibrator/vibrating toy based on what's happening in Overwatch 2, u
 
 Requires [Intiface Central](https://intiface.com/central/)  if you want to use it with a toy.
 
-Default settings:
+Default Settings (all triggers can be disabled or have their intensity/duration changed in the config):
 - **Elimination:** +30% intensity for 6 seconds
 - **Assist:** +15% intensity for 3 seconds
 - **Mercy:**
@@ -15,6 +15,10 @@ Default settings:
 - **Zenyatta:**
   - **Harmony orb:** +15% intensity while active
   - **Discord orb:** +20% intensity while active
+
+Optional Settings (all disabled by default):
+- **Save:** +50% intensity for 4 seconds
+- **Being beamed by Mercy:** +30% intensity while active
 
 Known Issues:
 - Poor detection of Mercy's heal beam at 2560x1440p.
