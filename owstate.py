@@ -17,6 +17,8 @@ class OverwatchStateTracker:
             "being_beamed":[762, 807, 460, 508],
             "overtime":[37, 57, 903, 1016],
             "hacked":[860, 884, 169, 193],
+            "zen_harmony":[954, 986, 738, 762],
+            "zen_discord":[954, 985, 1157, 1182],
             }
         to_mask = [
             "heal_beam",
@@ -42,6 +44,12 @@ class OverwatchStateTracker:
         self.damage_beam_active_confs = 0
         self.pos_required_confs = 1
         self.neg_required_confs = 8
+        self.harmony_orb = False
+        self.discord_orb = False
+        self.harmony_orb_buffer = 0
+        self.discord_orb_buffer = 0
+        # Orb takes up to 0.8s to reconnect
+        self.zen_orb_neg_confs = 30
 
     def refresh(self, capture_frame_only=False):
         self.owcv.capture_frame()
@@ -74,10 +82,36 @@ class OverwatchStateTracker:
             self.new_saves = self.detect_new_notifs("save")
 
             self.being_beamed = self.owcv.detect_single("being_beamed")
+
             if self.hero == "Mercy":
                 self.detect_mercy_beams()
-                if self.new_saves > 0:
+
+                #if self.new_saves > 0: # Causes resurrect to never toggle off
+                if self.count_notifs_of_type("save") > 0:
                     self.resurrecting = self.owcv.detect_single("resurrect_cd")
+
+            elif self.hero == "Zenyatta":
+                if self.owcv.detect_single("zen_harmony"):
+                    self.harmony_orb_buffer = 0
+                    if not self.harmony_orb:
+                        self.harmony_orb = True
+                else:
+                    if self.harmony_orb:
+                        self.harmony_orb_buffer -= 1
+                        if self.harmony_orb_buffer == -self.zen_orb_neg_confs:
+                            self.harmony_orb = False
+
+                if self.owcv.detect_single("zen_discord"):
+                    self.discord_orb_buffer = 0
+                    if not self.discord_orb:
+                        self.discord_orb = True
+                else:
+                    if self.discord_orb:
+                        self.discord_orb_buffer -= 1
+                        if self.discord_orb_buffer == -self.zen_orb_neg_confs:
+                            self.discord_orb = False
+
+
         else:
             if not self.is_dead:
                 self.is_dead = True
