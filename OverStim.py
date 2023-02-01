@@ -19,8 +19,8 @@ def update_device_count(last_device_count):
         return current_device_count
 
 async def stop_all_devices():
-    for key in list(intensity_tracker):
-        del intensity_tracker[key]
+    for key in timed_vibes:
+        timed_vibes[key].clear()
     for device_id in client.devices:
         try:
             device = client.devices[device_id]
@@ -30,11 +30,19 @@ async def stop_all_devices():
             print(err)
     print("Stopped all devices.")
 
+def get_expired_items(array, expiry_index):
+    current_time = time.time()
+    expired_items = []
+    for item in array:
+        if item[expiry_index] <= current_time:
+            expired_items.append(item)
+    return expired_items
+
 def limit_intensity(intensity):
     if intensity > 1:
         intensity = 1
     elif intensity < 0:
-        print(f"Intensity was {intensity} but it cannot be lower than 0. Setting it to 0.")
+        print(f"Tried to set intensity to {intensity} but it cannot be lower than 0. Setting it to 0.")
         intensity = 0
     return intensity
 
@@ -42,9 +50,8 @@ async def alter_intensity(amount):
     global current_intensity
     #global last_command_time
     current_intensity = round(MIN_INTENSITY_STEP * round((current_intensity + amount) / MIN_INTENSITY_STEP, 0), ROUNDING_AMOUNT)
-    print(f"Current intensity: {current_intensity}")
     real_intensity = limit_intensity(current_intensity)
-    print(f"Real intensity:    {real_intensity}")
+    print(f"Current intensity: {current_intensity}" + ("" if current_intensity == real_intensity else f" ({real_intensity})"))
     for device_id in client.devices:
         try:
             device = client.devices[device_id]
@@ -60,21 +67,15 @@ async def alter_intensity(amount):
     if BEEP_ENABLED:
         winsound.Beep(int(1000 + (real_intensity*5000)), 20)
 
-async def alter_intensity_for_duration(amount, duration, key="None"):
-    current_time = time.time()
-    if key == "None":
-        intensity_tracker[current_time] = [current_time + duration, amount]
-    else:
-        intensity_tracker[key] = [current_time + duration, amount]
+async def alter_intensity_for_duration(event_type, amount, duration):
+    timed_vibes[event_type].append([time.time() + duration, amount])
     await alter_intensity(amount)
 
 async def update_intensity():
-    current_time = time.time()
-    for key in list(intensity_tracker):
-        pair = intensity_tracker[key]
-        if pair[0] <= current_time:
-            del intensity_tracker[key]
-            await alter_intensity(-pair[1])
+    for event_type in timed_vibes:
+        for expired_vibe in get_expired_items(timed_vibes[event_type], 0):
+            timed_vibes[event_type].remove(expired_vibe)
+            await alter_intensity(-expired_vibe[1])
 
 async def run_overstim():
     # Define constants
@@ -112,9 +113,6 @@ async def run_overstim():
     heal_beam_vibe_active = False
     damage_beam_vibe_active = False
     being_beamed_vibe_active = False
-    current_elim_count = 0
-    current_assist_count = 0
-    current_save_count = 0
     last_refresh = 0
     device_count = 0
 
@@ -147,7 +145,7 @@ async def run_overstim():
                 print("Window closed.")
                 break
 
-        event, values = window.read(timeout=100)
+        event, values = window.read(timeout=500)
         if event == sg.WIN_CLOSED or event == "Quit":
             window.close()
             print("Window closed.")
@@ -189,35 +187,17 @@ async def run_overstim():
                     player.refresh()
 
                     if VIBE_FOR_ELIM:
-                        if player.elim_notifs > current_elim_count:
-                            #New elim appeared
-                            difference = player.elim_notifs - current_elim_count
-                            current_elim_count = player.elim_notifs
-                            await alter_intensity_for_duration(difference*ELIM_VIBE_INTENSITY, ELIM_VIBE_DURATION)
-                        elif player.elim_notifs < current_elim_count:
-                            #Old elim disappeared
-                            current_elim_count = player.elim_notifs
+                        if player.new_eliminations > 0:
+                            await alter_intensity_for_duration("elim", player.new_eliminations * ELIM_VIBE_INTENSITY, ELIM_VIBE_DURATION)
 
                     if VIBE_FOR_ASSIST:
-                        if player.assist_notifs > current_assist_count:
-                            #New assist appeared
-                            difference = player.assist_notifs - current_assist_count
-                            current_assist_count = player.assist_notifs
-                            await alter_intensity_for_duration(difference*ASSIST_VIBE_INTENSITY, ASSIST_VIBE_DURATION)
-                        elif player.assist_notifs < current_assist_count:
-                            #Old assist disappeared
-                            current_assist_count = player.assist_notifs
+                        if player.new_assists > 0:
+                            await alter_intensity_for_duration("assist", player.new_assists * ASSIST_VIBE_INTENSITY, ASSIST_VIBE_DURATION)
                     
                     if VIBE_FOR_SAVE:
-                        if player.saved_notifs > current_save_count:
-                            #New save appeared
-                            difference = player.saved_notifs - current_save_count
-                            current_save_count = player.saved_notifs
+                        if player.new_saves > 0:
                             if not player.resurrecting:
-                                await alter_intensity_for_duration(difference*SAVE_VIBE_INTENSITY, SAVE_VIBE_DURATION)
-                        elif player.saved_notifs < current_save_count:
-                            #Old save disappeared
-                            current_save_count = player.saved_notifs
+                                await alter_intensity_for_duration("save", player.new_saves * SAVE_VIBE_INTENSITY, SAVE_VIBE_DURATION)
 
                     if VIBE_FOR_BEING_BEAMED:
                         if being_beamed_vibe_active:
@@ -231,9 +211,9 @@ async def run_overstim():
 
                     if player.hero == "Mercy":
                         if VIBE_FOR_RESURRECT:
-                            if player.resurrecting and "resurrect" not in intensity_tracker:
-                                await alter_intensity_for_duration(RESURRECT_VIBE_INTENSITY, RESURRECT_VIBE_DURATION, key="resurrect")
-                        
+                            #TODO: Should consider allowing multiple active vibes for resurrect. What if people use a long duration and a lower intensity?
+                            if player.resurrecting and len(timed_vibes["resurrect"]) == 0:
+                                await alter_intensity_for_duration("resurrect", RESURRECT_VIBE_INTENSITY, RESURRECT_VIBE_DURATION)
                         if VIBE_FOR_MERCY_BEAM:
                             if player.heal_beam:
                                 if not heal_beam_vibe_active:
@@ -387,7 +367,7 @@ config_fault = [False, ""]
 try:
     BEEP_ENABLED = config["OverStim"].getboolean("BEEP_ENABLED")
     USING_INTIFACE = config["OverStim"].getboolean("USING_INTIFACE")
-    # Maybe check step count of devices/actuators?
+    #TODO: Maybe check step count of devices/actuators?
     MIN_INTENSITY_STEP = config["OverStim"].getfloat("MIN_INTENSITY_STEP")
     ROUNDING_AMOUNT = len(str(MIN_INTENSITY_STEP).split(".")[1])
 except Exception as err:
@@ -397,7 +377,12 @@ except Exception as err:
 # Define global variables
 window = None
 current_intensity = 0
-intensity_tracker = {}
+timed_vibes = {key:[] for key in [
+    "elim",
+    "assist",
+    "save",
+    "resurrect",
+    ]}
 #last_command_time = 0
 client = Client("OverStim", ProtocolSpec.v3)
 
