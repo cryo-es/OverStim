@@ -13,10 +13,14 @@ class OverwatchStateTracker:
             "death_spec":[66, 86, 1416, 1574],
             "heal_beam":[650, 730, 790, 860],
             "damage_beam":[658, 719, 1065, 1126],
+            "mercy_staff":[949, 988, 1681, 1762],
+            "mercy_pistol":[947, 987, 1681, 1741],
             "resurrect_cd":[920, 1000, 1580, 1655],
             "being_beamed":[762, 807, 460, 508],
+            "being_orbed":[859, 885, 170, 196],
             "overtime":[37, 57, 903, 1016],
             "hacked":[860, 884, 169, 193],
+            "zen_weapon":[945, 993, 1701, 1765],
             "zen_harmony":[954, 986, 738, 762],
             "zen_discord":[954, 985, 1157, 1182],
             }
@@ -27,6 +31,7 @@ class OverwatchStateTracker:
         self.owcv = ComputerVision(coords, to_mask, final_resolution)
         #TODO: Must implement change_hero method, to zero all hero related values of the old hero.
         self.hero = "Other"
+        self.detected_hero = ""
         self.current_time = 0
         self.in_killcam = False
         self.death_spectating = False
@@ -37,6 +42,7 @@ class OverwatchStateTracker:
         self.new_assists = 0
         self.new_saves = 0
         self.being_beamed = False
+        self.being_orbed = False
         self.heal_beam = False
         self.damage_beam = False
         self.resurrecting = False
@@ -64,6 +70,7 @@ class OverwatchStateTracker:
         self.new_eliminations = 0
         self.new_assists = 0
         self.new_saves = 0
+        self.detected_hero = ""
 
         #TODO: Find out if the player is alive (there is a period of time between death and killcam, should handle that with "you were eliminated" message and a timer)
         self.in_killcam = self.owcv.detect_single("killcam")
@@ -82,6 +89,8 @@ class OverwatchStateTracker:
             self.new_saves = self.detect_new_notifs("save")
 
             self.being_beamed = self.owcv.detect_single("being_beamed")
+
+            self.being_orbed = self.owcv.detect_single("being_orbed")
 
             if self.hero == "Mercy":
                 self.detect_mercy_beams()
@@ -111,11 +120,19 @@ class OverwatchStateTracker:
                         if self.discord_orb_buffer == -self.zen_orb_neg_confs:
                             self.discord_orb = False
 
+            # Detect hero swaps
+            if self.hero != "Zenyatta":
+                if self.owcv.detect_single("zen_weapon", threshold=0.97):
+                    self.detected_hero = "Zenyatta"
+            if self.hero != "Mercy":
+                if self.owcv.detect_single("mercy_staff", threshold=0.97) or self.owcv.detect_single("mercy_pistol", threshold=0.97):
+                    self.detected_hero = "Mercy"
 
         else:
             if not self.is_dead:
                 self.is_dead = True
                 self.being_beamed = False
+                self.being_orbed = False
                 if self.hero == "Mercy":
                     self.heal_beam = False
                     self.damage_beam = False
