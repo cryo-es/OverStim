@@ -21,6 +21,7 @@ def update_device_count(last_device_count):
 async def stop_all_devices():
     for key in timed_vibes:
         timed_vibes[key].clear()
+    current_intensity = 0
     for device_id in client.devices:
         try:
             device = client.devices[device_id]
@@ -29,6 +30,7 @@ async def stop_all_devices():
             print("A device experienced an error while being stopped.")
             print(err)
     print("Stopped all devices.")
+    window["-CURRENT_INTENSITY-"].update(f"{int(current_intensity*100)}%")
 
 def get_expired_items(array, expiry_index):
     current_time = time.time()
@@ -50,7 +52,7 @@ def round_value_to_nearest_step(value, step):
     digits_to_round_to = len(str(float(step)).split(".")[1])
     return round(step * round(value / step, 0), digits_to_round_to)
 
-async def alter_intensity(amount):
+async def alter_intensity(amount, event_type):
     global current_intensity
 
     # Alter the intensity
@@ -58,7 +60,7 @@ async def alter_intensity(amount):
         amount = amount * MAX_VIBE_INTENSITY
     current_intensity = abs(round(current_intensity + amount, 4))
     real_intensity = limit_value(current_intensity, MAX_VIBE_INTENSITY, value_name="intensity")
-    print(f"New intensity: {current_intensity}" + ("" if current_intensity == real_intensity else f" ({real_intensity})"))
+    print(f"Updated intensity: {current_intensity}" + ("" if current_intensity == real_intensity else f" ({real_intensity})") + f" | {event_type}")
 
     # Send new intensity to all devices
     for device_id in client.devices:
@@ -96,13 +98,13 @@ async def alter_intensity(amount):
 
 async def alter_intensity_for_duration(event_type, amount, duration):
     timed_vibes[event_type].append([time.time() + duration, amount])
-    await alter_intensity(amount)
+    await alter_intensity(amount, event_type)
 
 async def update_intensity():
     for event_type in timed_vibes:
         for expired_vibe in get_expired_items(timed_vibes[event_type], 0):
             timed_vibes[event_type].remove(expired_vibe)
-            await alter_intensity(-expired_vibe[1])
+            await alter_intensity(-expired_vibe[1], f"{event_type} expired")
 
 async def run_overstim():
     # Define constants
@@ -119,6 +121,7 @@ async def run_overstim():
         SAVE_VIBE_INTENSITY = config["OverStim"].getfloat("SAVE_VIBE_INTENSITY")
         SAVE_VIBE_DURATION = config["OverStim"].getfloat("SAVE_VIBE_DURATION")
         VIBE_FOR_BEING_BEAMED = config["OverStim"].getboolean("VIBE_FOR_BEING_BEAMED")
+        VIBE_FOR_BEING_ORBED = config["OverStim"].getboolean("VIBE_FOR_BEING_ORBED")
         BEING_BEAMED_VIBE_INTENSITY =config["OverStim"].getfloat("BEING_BEAMED_VIBE_INTENSITY")
         VIBE_FOR_RESURRECT = config["OverStim"].getboolean("VIBE_FOR_RESURRECT")
         RESURRECT_VIBE_INTENSITY = config["OverStim"].getfloat("RESURRECT_VIBE_INTENSITY")
@@ -146,6 +149,7 @@ async def run_overstim():
     heal_beam_vibe_active = False
     damage_beam_vibe_active = False
     being_beamed_vibe_active = False
+    being_orbed_vibe_active = False
     harmony_orb_vibe_active = False
     discord_orb_vibe_active = False
     last_refresh = 0
@@ -237,12 +241,22 @@ async def run_overstim():
                     if VIBE_FOR_BEING_BEAMED:
                         if being_beamed_vibe_active:
                             if not player.being_beamed:
-                                await alter_intensity(-BEING_BEAMED_VIBE_INTENSITY)
+                                await alter_intensity(-BEING_BEAMED_VIBE_INTENSITY, "stopped being beamed")
                                 being_beamed_vibe_active = False
                         else:
                             if player.being_beamed:
-                                await alter_intensity(BEING_BEAMED_VIBE_INTENSITY)
+                                await alter_intensity(BEING_BEAMED_VIBE_INTENSITY, "being beamed")
                                 being_beamed_vibe_active = True
+
+                    if VIBE_FOR_BEING_ORBED:
+                        if being_orbed_vibe_active:
+                            if not player.being_orbed:
+                                await alter_intensity(-BEING_ORBED_VIBE_INTENSITY, "stopped being orbed")
+                                being_orbed_vibe_active = False
+                        else:
+                            if player.being_orbed:
+                                await alter_intensity(BEING_ORBED_VIBE_INTENSITY, "being orbed")
+                                being_orbed_vibe_active = True
 
                     if player.hero == "Mercy":
                         if VIBE_FOR_RESURRECT:
@@ -253,26 +267,26 @@ async def run_overstim():
                             if player.heal_beam:
                                 if not heal_beam_vibe_active:
                                     if damage_beam_vibe_active:
-                                        await alter_intensity(HEAL_BEAM_VIBE_INTENSITY-DAMAGE_BEAM_VIBE_INTENSITY)
+                                        await alter_intensity(HEAL_BEAM_VIBE_INTENSITY-DAMAGE_BEAM_VIBE_INTENSITY, "heal beaming")
                                         heal_beam_vibe_active = True
                                         damage_beam_vibe_active = False
                                     else:
-                                        await alter_intensity(HEAL_BEAM_VIBE_INTENSITY)
+                                        await alter_intensity(HEAL_BEAM_VIBE_INTENSITY, "heal beaming")
                                         heal_beam_vibe_active = True
                             elif player.damage_beam:
                                 if not damage_beam_vibe_active:
                                     if heal_beam_vibe_active:
-                                        await alter_intensity(DAMAGE_BEAM_VIBE_INTENSITY-HEAL_BEAM_VIBE_INTENSITY)
+                                        await alter_intensity(DAMAGE_BEAM_VIBE_INTENSITY-HEAL_BEAM_VIBE_INTENSITY, "damage beaming")
                                         damage_beam_vibe_active = True
                                         heal_beam_vibe_active = False
                                     else:
-                                        await alter_intensity(DAMAGE_BEAM_VIBE_INTENSITY)
+                                        await alter_intensity(DAMAGE_BEAM_VIBE_INTENSITY, "damage beaming")
                                         damage_beam_vibe_active = True
                             elif heal_beam_vibe_active:
-                                await alter_intensity(-HEAL_BEAM_VIBE_INTENSITY)
+                                await alter_intensity(-HEAL_BEAM_VIBE_INTENSITY, "stopped heal beaming")
                                 heal_beam_vibe_active = False
                             elif damage_beam_vibe_active:
-                                await alter_intensity(-DAMAGE_BEAM_VIBE_INTENSITY)
+                                await alter_intensity(-DAMAGE_BEAM_VIBE_INTENSITY, "stopped damage beaming")
                                 damage_beam_vibe_active = False
 
                     elif player.hero == "Zenyatta":
@@ -280,21 +294,26 @@ async def run_overstim():
                             #TODO: Turn some of these ifs inside out
                             if harmony_orb_vibe_active:
                                 if not player.harmony_orb:
-                                    await alter_intensity(-HARMONY_ORB_VIBE_INTENSITY)
+                                    await alter_intensity(-HARMONY_ORB_VIBE_INTENSITY, "stopped harmony orb")
                                     harmony_orb_vibe_active = False
                             else:
                                 if player.harmony_orb:
-                                    await alter_intensity(HARMONY_ORB_VIBE_INTENSITY)
+                                    await alter_intensity(HARMONY_ORB_VIBE_INTENSITY, "harmony orb")
                                     harmony_orb_vibe_active = True
                         if VIBE_FOR_DISCORD_ORB:
                             if discord_orb_vibe_active:
                                 if not player.discord_orb:
-                                    await alter_intensity(-DISCORD_ORB_VIBE_INTENSITY)
+                                    await alter_intensity(-DISCORD_ORB_VIBE_INTENSITY, "stopped discord orb")
                                     discord_orb_vibe_active = False
                             else:
                                 if player.discord_orb:
-                                    await alter_intensity(DISCORD_ORB_VIBE_INTENSITY)
+                                    await alter_intensity(DISCORD_ORB_VIBE_INTENSITY, "discord orb")
                                     discord_orb_vibe_active = True
+
+                    if player.detected_hero != "":
+                        print(f"Hero switch detected: {player.detected_hero}")
+                        window["-HERO_SELECTOR-"].update(player.detected_hero)
+                        player.switch_hero(player.detected_hero)
 
                 event, values = window.read(timeout=1)
                 if event == sg.WIN_CLOSED or event == "Quit":
