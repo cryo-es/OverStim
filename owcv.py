@@ -6,11 +6,7 @@ import dxcam
 
 
 def resource_path(relative_path):
-    try:
-        base_path = sys._MEIPASS
-    except Exception:
-        base_path = os.path.abspath(".")
-    return os.path.join(base_path, relative_path)
+    return os.path.join(os.path.abspath("."), relative_path)
 
 class ComputerVision:
     def __init__(self, coords, mask_names, final_resolution={"width":1920, "height":1080}):
