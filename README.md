@@ -1,7 +1,7 @@
 # OverStim
 [Download](https://github.com/cryo-es/OverStim/releases)
 
-Controls your vibrator/vibrating toy based on what's happening in Overwatch 2, using computer vision.
+Controls your vibrator/vibrating toy based on what's happening in Overwatch 2, using computer vision. Won't trigger anticheat, because all it's doing is recording the screen like Discord screenshare and OBS does.
 
 Requires [Intiface Central](https://intiface.com/central/)  if you want to use it with a toy.
 
