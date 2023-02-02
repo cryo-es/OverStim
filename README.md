@@ -19,6 +19,7 @@ Default Settings (all triggers can be disabled or have their intensity/duration 
 Optional Settings (all disabled by default):
 - **Save:** +50% intensity for 4 seconds
 - **Being beamed by Mercy:** +30% intensity while active
+- **Being orbed by Zenyatta:** +30% intensity while active
 
 Known Issues:
 - Poor detection of Mercy's heal beam at 2560x1440p.
