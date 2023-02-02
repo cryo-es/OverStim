@@ -38,32 +38,59 @@ def get_expired_items(array, expiry_index):
             expired_items.append(item)
     return expired_items
 
-def limit_intensity(intensity):
-    if intensity > 1:
-        intensity = 1
-    elif intensity < 0:
-        print(f"Tried to set intensity to {intensity} but it cannot be lower than 0. Setting it to 0.")
-        intensity = 0
-    return intensity
+def limit_value(value, max_value, min_value=0, value_name="value"):
+    if value > max_value:
+        value = max_value
+    elif value < min_value:
+        print(f"Tried to set {value_name} to {value} but it cannot be lower than {min_value}. Setting it to {min_value}.")
+        value = min_value
+    return value
+
+def round_value_to_nearest_step(value, step):
+    digits_to_round_to = len(str(float(step)).split(".")[1])
+    return round(step * round(value / step, 0), digits_to_round_to)
 
 async def alter_intensity(amount):
     global current_intensity
-    #global last_command_time
-    current_intensity = round(MIN_INTENSITY_STEP * round((current_intensity + amount) / MIN_INTENSITY_STEP, 0), ROUNDING_AMOUNT)
-    real_intensity = limit_intensity(current_intensity)
-    print(f"Current intensity: {current_intensity}" + ("" if current_intensity == real_intensity else f" ({real_intensity})"))
+
+    # Alter the intensity
+    if SCALE_ALL_INTENSITIES_BY_MAX_INTENSITY:
+        amount = amount * MAX_VIBE_INTENSITY
+    current_intensity = abs(round(current_intensity + amount, 4))
+    real_intensity = limit_value(current_intensity, MAX_VIBE_INTENSITY, value_name="intensity")
+    print(f"New intensity: {current_intensity}" + ("" if current_intensity == real_intensity else f" ({real_intensity})"))
+
+    # Send new intensity to all devices
     for device_id in client.devices:
+        device = client.devices[device_id]
         try:
-            device = client.devices[device_id]
-            for actuator in device.actuators:
-                await device.actuators[0].command(real_intensity)
-            #print(f"Updated intensity for {device.name}")
+            if device.name != "XBox (XInput) Compatible Gamepad":
+                # Send new intensity to every actuator within the device
+                actuator_intensities = []
+                for actuator in device.actuators:
+
+                    # Set actuator intensity to the closest step supported by that actuator, and limit it to the user-defined max intensity
+                    actuator_min_intensity_step = 1 / actuator.step_count
+                    actuator_max_intensity = round_value_to_nearest_step(MAX_VIBE_INTENSITY, actuator_min_intensity_step)
+                    if actuator_max_intensity > MAX_VIBE_INTENSITY:
+                        actuator_max_intensity -= actuator_min_intensity_step
+                    actuator_intensity = limit_value(round_value_to_nearest_step(current_intensity, actuator_min_intensity_step), actuator_max_intensity, value_name="actuator intensity")
+                    actuator_intensities.append(actuator_intensity)
+                    await device.actuators[0].command(actuator_intensity)
+                
+                # Print new intensities of device actuators
+                intensity_string = f"[{device.name}] Vibe 1: {actuator_intensities[0]}"
+                for index in range(len(actuator_intensities) - 1):
+                    intensity_string = f"{intensity_string}, Vibe {index+2}: {actuator_intensities[index + 1]}"
+                print(intensity_string)
+
         except Exception as err:
-            await device.stop()
-            print("An error occured when altering the vibration of a device.")
+            print(f"Stopping {device.name} due to an error when altering its vibration.")
             print(err)
-    #last_command_time = time.time()
-    window["-CURRENT_INTENSITY-"].update(str(int(current_intensity*100)) + ("%" if current_intensity == real_intensity else "% (max 100%)"))
+            await device.stop()
+
+    # Update the GUI with new intensity, and beep if enabled.
+    window["-CURRENT_INTENSITY-"].update(str(int(current_intensity*100)) + ("%" if current_intensity == real_intensity else f"% (max {int(MAX_VIBE_INTENSITY*100)}%)"))
     if BEEP_ENABLED:
         winsound.Beep(int(1000 + (real_intensity*5000)), 20)
 
@@ -161,7 +188,7 @@ async def run_overstim():
         
         elif event == "-HERO_SELECTOR-":
             hero_selected = values["-HERO_SELECTOR-"]
-            player.hero = hero_selected
+            player.switch_hero(hero_selected)
             print(f"Hero switched to {hero_selected}.")
 
         elif event == "Start":
@@ -283,7 +310,7 @@ async def run_overstim():
                     break
                 elif event == "-HERO_SELECTOR-":
                     hero_selected = values["-HERO_SELECTOR-"]
-                    player.hero = hero_selected
+                    player.switch_hero(hero_selected)
                     print(f"Hero switched to {hero_selected}.")
 
             if event == sg.WIN_CLOSED or event == "Quit":
@@ -386,7 +413,6 @@ async def main():
     window.close()
     print("Quitting.")
 
-
 # Import config
 config = configparser.ConfigParser()
 config.read(resource_path('config.ini'))
@@ -396,9 +422,8 @@ config_fault = [False, ""]
 try:
     BEEP_ENABLED = config["OverStim"].getboolean("BEEP_ENABLED")
     USING_INTIFACE = config["OverStim"].getboolean("USING_INTIFACE")
-    #TODO: Maybe check step count of devices/actuators?
-    MIN_INTENSITY_STEP = config["OverStim"].getfloat("MIN_INTENSITY_STEP")
-    ROUNDING_AMOUNT = len(str(MIN_INTENSITY_STEP).split(".")[1])
+    MAX_VIBE_INTENSITY = limit_value(config["OverStim"].getfloat("MAX_VIBE_INTENSITY"), 1, value_name="MAX_VIBE_INTENSITY")
+    SCALE_ALL_INTENSITIES_BY_MAX_INTENSITY = config["OverStim"].getboolean("SCALE_ALL_INTENSITIES_BY_MAX_INTENSITY")
 except Exception as err:
     config_fault[0] = True
     config_fault[1] = err
@@ -412,7 +437,7 @@ timed_vibes = {key:[] for key in [
     "save",
     "resurrect",
     ]}
-#last_command_time = 0
+
 client = Client("OverStim", ProtocolSpec.v3)
 
 sg.theme("DarkAmber")
