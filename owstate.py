@@ -121,6 +121,20 @@ class OverwatchStateTracker:
                     self.damage_beam = False
                     self.resurrecting = False
 
+    def switch_hero(self, hero_name):
+        if self.hero == "Mercy":
+            self.heal_beam = False
+            self.damage_beam = False
+            self.resurrecting = False
+            self.heal_beam_active_confs = 0
+            self.damage_beam_active_confs = 0
+        elif self.hero == "Zenyatta":
+            self.harmony_orb = False
+            self.discord_orb = False
+            self.harmony_orb_buffer = 0
+            self.discord_orb_buffer = 0
+        self.hero = hero_name
+
     def detect_new_notifs(self, notif_type):
         new_notifs = 0
         if self.total_new_notifs < 3:
