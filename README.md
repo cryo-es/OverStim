@@ -5,7 +5,7 @@ Controls your vibrator/vibrating toy based on what's happening in Overwatch 2, u
 
 Requires [Intiface Central](https://intiface.com/central/)  if you want to use it with a toy.
 
-Default Settings (all triggers can be disabled or have their intensity/duration changed in the config):
+Default Settings (all triggers can be disabled or have their intensities/durations changed in the config):
 - **Elimination:** +30% intensity for 6 seconds
 - **Assist:** +15% intensity for 3 seconds
 - **Mercy:**
