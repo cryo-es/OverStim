@@ -17,7 +17,7 @@ Default Settings (all triggers can be disabled or have their intensity/duration 
   - **Discord orb:** +20% intensity while active
 
 Optional Settings (all disabled by default):
-- **Save:** +50% intensity for 4 seconds
+- **Saved someone:** +50% intensity for 4 seconds
 - **Being beamed by Mercy:** +30% intensity while active
 - **Being orbed by Zenyatta:** +30% intensity while active
 
