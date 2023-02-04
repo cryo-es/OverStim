@@ -1,23 +1,25 @@
 If you're opening this in Notepad:
-It's easier to read with Word Wrap enabled.
 Click Format > Word Wrap.
+It's easier to read with Word Wrap enabled.
 
-Before running the exe for the first time:
-Open config.ini and toggle off any features you don't want. Some features are off by default.
-Feel free to tweak any of the settings as desired.
-
-Settings you might want to change:
-SCREEN_WIDTH = 2560 (if your monitor is 2560x1440, or set some other value as per your monitor)
-SCREEN_HEIGHT = 1440 (if your monitor is 2560x1440, or set some other value as per your monitor)
-MAX_VIBE_INTENSITY = 0.8 (if 100% vibe intensity is too much for you, you can limit it to 80% or some other value of your choice)
-
-Notes:
 Thanks for helping test OverStim!
+
+Before running OverStim for the first time, you should open the config file to see what's inside.
+OverStim is highly customizable, and some features come disabled by default.
+Settings you might want to change:
+
+MAX_VIBE_INTENSITY:
+If you have a powerful toy, 100% intensity might be too much.
+You can use this setting to limit the maximum vibration intensity.
+The example below shows how to limit it to 80%. Remember to change it in the config file, not here.
+MAX_VIBE_INTENSITY = 0.8
+
 We have an OverStim channel in this server: https://discord.gg/AVpcVhQQhu (graciously hosted by Furi; the developer of In Heat, Underwatch, and Buttplug of Legends. You can find their projects in there too!)
 Feedback, bug reports, feature requests, and ideas are all encouraged and can be submitted via Discord or GitHub.
 I'm currently trying to collect as many ideas as possible, so don't be shy! Our only limit is what can be visually detected. To see my future plans, check the pins in the Discord.
 
 Known Issues:
+- Some features don't work with colourblind settings enabled.
 - Poor detection of Mercy's heal beam at 2560x1440p.
 - Probably doesn't work at aspect ratios other than 16:9.
 - High latency to the game server causes Mercy's beam to reconnect to people slower when switching beam types. This can cause temporary gaps in vibration.
