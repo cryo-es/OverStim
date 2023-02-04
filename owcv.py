@@ -9,15 +9,17 @@ def resource_path(relative_path):
     return os.path.join(os.path.abspath("."), relative_path)
 
 class ComputerVision:
-    def __init__(self, coords, mask_names, final_resolution={"width":1920, "height":1080}):
+    def __init__(self, coords, mask_names):
         self.base_resolution = {"width":1920, "height":1080}
-        self.final_resolution = final_resolution
+        self.screen = dxcam.create(max_buffer_len=1)
+        res = self.screen.grab().shape[:2]
+        self.final_resolution = {"width":res[1], "height":res[0]}
+        print("Detected resolution as {0}x{1}.".format(self.final_resolution["width"], self.final_resolution["height"]))
         self.screenshot_region = (0, 0, self.final_resolution["width"], self.final_resolution["height"])
         self.coords = coords
         self.templates = {key:cv.cvtColor(cv.imread(resource_path(f"data\\t_{key}.png")), cv.COLOR_RGB2GRAY) for key in self.coords}
         self.mask_names = mask_names
         self.masks = {key:cv.cvtColor(cv.imread(resource_path(f"data\\m_{key}.png")), cv.COLOR_RGB2GRAY) for key in self.mask_names}
-        self.screen = dxcam.create(max_buffer_len=1)
         self.frame = []
 
     def start_capturing(self, target_fps=60):
