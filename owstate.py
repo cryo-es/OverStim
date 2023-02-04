@@ -4,7 +4,7 @@ from owcv import ComputerVision
 
 
 class OverwatchStateTracker:
-    def __init__(self, final_resolution):
+    def __init__(self):
         coords = {
             "elimination":[749, 850, 832, 976],
             "assist":[749, 850, 832, 976],
@@ -28,10 +28,11 @@ class OverwatchStateTracker:
             "heal_beam",
             "damage_beam",
             ]
-        self.owcv = ComputerVision(coords, to_mask, final_resolution)
-        #TODO: Must implement change_hero method, to zero all hero related values of the old hero.
+        self.owcv = ComputerVision(coords, to_mask)
         self.hero = "Other"
-        self.detected_hero = ""
+        self.detected_hero = "Other"
+        self.detected_hero_time = 0
+        self.hero_auto_detect = True
         self.current_time = 0
         self.in_killcam = False
         self.death_spectating = False
@@ -70,7 +71,6 @@ class OverwatchStateTracker:
         self.new_eliminations = 0
         self.new_assists = 0
         self.new_saves = 0
-        self.detected_hero = ""
 
         #TODO: Find out if the player is alive (there is a period of time between death and killcam, should handle that with "you were eliminated" message and a timer)
         self.in_killcam = self.owcv.detect_single("killcam")
@@ -121,13 +121,21 @@ class OverwatchStateTracker:
                             self.discord_orb = False
 
             # Detect hero swaps
-            if self.hero != "Zenyatta":
-                if self.owcv.detect_single("zen_weapon", threshold=0.97):
-                    self.detected_hero = "Zenyatta"
-            if self.hero != "Mercy":
-                if self.owcv.detect_single("mercy_staff", threshold=0.97) or self.owcv.detect_single("mercy_pistol", threshold=0.97):
-                    self.detected_hero = "Mercy"
+            # Triggers for one whole second every 3 seconds, should improve this to trigger for shorter but more frequently
+            if self.hero_auto_detect and int(self.current_time) % 3 == 0:
+                if self.hero != "Zenyatta":
+                    if self.owcv.detect_single("zen_weapon", threshold=0.97):
+                        self.detected_hero = "Zenyatta"
+                        self.detected_hero_time = current_time
+                if self.hero != "Mercy":
+                    if self.owcv.detect_single("mercy_staff", threshold=0.97) or self.owcv.detect_single("mercy_pistol", threshold=0.97):
+                        self.detected_hero = "Mercy"
+                        self.detected_hero_time = current_time
+                # If no hero has been detected in the last 8 seconds:
+                if self.detected_hero != "Other" and self.current_time > self.detected_hero_time + 8:
+                    self.detected_hero = "Other"
 
+        # If player is dead:
         else:
             if not self.is_dead:
                 self.is_dead = True
