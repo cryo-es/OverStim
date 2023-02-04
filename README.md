@@ -22,6 +22,7 @@ Optional Settings (all disabled by default):
 - **Being orbed by Zenyatta:** +30% intensity while active
 
 Known Issues:
+- Some features don't work with colourblind settings enabled.
 - Poor detection of Mercy's heal beam at 2560x1440p.
 - Probably doesn't work at aspect ratios other than 16:9.
 - High latency to the game server causes Mercy's beam to reconnect to people slower when switching beam types. This can cause temporary gaps in vibration.
