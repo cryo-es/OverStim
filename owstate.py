@@ -123,17 +123,14 @@ class OverwatchStateTracker:
             # Detect hero swaps
             # Triggers for one whole second every 3 seconds, should improve this to trigger for shorter but more frequently
             if self.hero_auto_detect and int(self.current_time) % 3 == 0:
-                if self.hero != "Zenyatta":
                     if self.owcv.detect_single("zen_weapon", threshold=0.97):
                         self.detected_hero = "Zenyatta"
-                        self.detected_hero_time = current_time
-                if self.hero != "Mercy":
-                    if self.owcv.detect_single("mercy_staff", threshold=0.97) or self.owcv.detect_single("mercy_pistol", threshold=0.97):
+                        self.detected_hero_time = self.current_time
+                    elif self.owcv.detect_single("mercy_staff", threshold=0.97) or self.owcv.detect_single("mercy_pistol", threshold=0.97):
                         self.detected_hero = "Mercy"
-                        self.detected_hero_time = current_time
-                # If no hero has been detected in the last 8 seconds:
-                if self.detected_hero != "Other" and self.current_time > self.detected_hero_time + 8:
-                    self.detected_hero = "Other"
+                        self.detected_hero_time = self.current_time
+                    elif self.detected_hero != "Other" and self.current_time > self.detected_hero_time + 8:
+                        self.detected_hero = "Other"
 
         # If player is dead:
         else:
