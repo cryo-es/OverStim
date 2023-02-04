@@ -109,8 +109,6 @@ async def update_intensity():
 async def run_overstim():
     # Define constants
     try:
-        SCREEN_WIDTH = config["OverStim"].getint("SCREEN_WIDTH")
-        SCREEN_HEIGHT = config["OverStim"].getint("SCREEN_HEIGHT")
         VIBE_FOR_ELIM = config["OverStim"].getboolean("VIBE_FOR_ELIM")
         ELIM_VIBE_INTENSITY = config["OverStim"].getfloat("ELIM_VIBE_INTENSITY")
         ELIM_VIBE_DURATION = config["OverStim"].getfloat("ELIM_VIBE_DURATION")
@@ -133,8 +131,8 @@ async def run_overstim():
         HARMONY_ORB_VIBE_INTENSITY = config["OverStim"].getfloat("HARMONY_ORB_VIBE_INTENSITY")
         VIBE_FOR_DISCORD_ORB = config["OverStim"].getboolean("VIBE_FOR_DISCORD_ORB")
         DISCORD_ORB_VIBE_INTENSITY = config["OverStim"].getfloat("DISCORD_ORB_VIBE_INTENSITY")
-        DEAD_REFRESH_DELAY = config["OverStim"].getfloat("DEAD_REFRESH_DELAY")
         MAX_REFRESH_RATE = config["OverStim"].getint("MAX_REFRESH_RATE")
+        DEAD_REFRESH_RATE = config["OverStim"].getfloat("DEAD_REFRESH_RATE")
         MERCY_BEAM_DISCONNECT_BUFFER = config["OverStim"].getint("MERCY_BEAM_DISCONNECT_BUFFER")
         ZEN_ORB_DISCONNECT_BUFFER = config["OverStim"].getint("ZEN_ORB_DISCONNECT_BUFFER")
     except Exception as err:
@@ -143,7 +141,7 @@ async def run_overstim():
 
     # Initialize variables
     if not config_fault[0]:
-        player = OverwatchStateTracker({"width":SCREEN_WIDTH, "height":SCREEN_HEIGHT})
+        player = OverwatchStateTracker()
         player.neg_required_confs = MERCY_BEAM_DISCONNECT_BUFFER
         player.zen_orb_neg_confs = ZEN_ORB_DISCONNECT_BUFFER
     heal_beam_vibe_active = False
@@ -164,7 +162,7 @@ async def run_overstim():
         if USING_INTIFACE and not client.connected:
             window["-PROGRAM_STATUS-"].update("INTIFACE ERROR")
             window["Start"].update(disabled=True)
-            print("Lost connection to Intiface.")
+            print("Lost connection to Intiface. Make sure Intiface Central is started and then restart OverStim.")
 
             event, values = window.read()
             if event == sg.WIN_CLOSED or event == "Quit":
@@ -195,6 +193,11 @@ async def run_overstim():
             player.switch_hero(hero_selected)
             print(f"Hero switched to {hero_selected}.")
 
+        elif event == "-HERO_AUTO_DETECT-":
+            checkbox_state = values["-HERO_AUTO_DETECT-"]
+            player.hero_auto_detect = checkbox_state
+            window["-HERO_SELECTOR-"].update(disabled=checkbox_state)
+
         elif event == "Start":
             window["Stop"].update(disabled=False)
             window["Start"].update(disabled=True)
@@ -218,7 +221,7 @@ async def run_overstim():
 
                 counter += 1
                 if player.is_dead:
-                    if current_time >= last_refresh + DEAD_REFRESH_DELAY:
+                    if current_time >= last_refresh + (1/DEAD_REFRESH_RATE):
                         last_refresh = current_time
                         player.refresh()
                 else:
@@ -310,7 +313,7 @@ async def run_overstim():
                                     await alter_intensity(DISCORD_ORB_VIBE_INTENSITY, "discord orb")
                                     discord_orb_vibe_active = True
 
-                    if player.detected_hero != "":
+                    if player.detected_hero != player.hero:
                         print(f"Hero switch detected: {player.detected_hero}")
                         window["-HERO_SELECTOR-"].update(player.detected_hero)
                         player.switch_hero(player.detected_hero)
@@ -331,6 +334,10 @@ async def run_overstim():
                     hero_selected = values["-HERO_SELECTOR-"]
                     player.switch_hero(hero_selected)
                     print(f"Hero switched to {hero_selected}.")
+                elif event == "-HERO_AUTO_DETECT-":
+                    checkbox_state = values["-HERO_AUTO_DETECT-"]
+                    player.hero_auto_detect = checkbox_state
+                    window["-HERO_SELECTOR-"].update(disabled=checkbox_state)
 
             if event == sg.WIN_CLOSED or event == "Quit":
                 print("Window closed.")
@@ -366,11 +373,12 @@ async def main():
     # Initialize variables
     scanning = False
     layout = [
-        [sg.Text("Playing hero:"), sg.Combo(HEROES, readonly=True, enable_events=True, key="-HERO_SELECTOR-")],
+        [sg.Text("Playing hero:"), sg.Combo(HEROES, readonly=True, disabled=True, enable_events=True, key="-HERO_SELECTOR-"), sg.Checkbox("Auto-detect", default=True, enable_events=True, key="-HERO_AUTO_DETECT-")],
         [sg.Text("Devices connected:"), sg.Text("0", size=(4,1), key="-DEVICE_COUNT-")],
         [sg.Text("Current intensity:"), sg.Text("0%", size=(17,1), key="-CURRENT_INTENSITY-")],
         [sg.Text("Program status:"), sg.Text("READY", size=(15,1), key="-PROGRAM_STATUS-")],
-        [sg.Button("Start"), sg.Button("Stop", disabled=True), sg.Button("Quit")],]
+        [sg.Button("Start"), sg.Button("Stop", disabled=True), sg.Button("Quit")],
+        ]
 
     # Set up GUI
     if OUTPUT_WINDOW_ENABLED:
@@ -415,10 +423,15 @@ async def main():
         await task
     except Exception as ex:
         await stop_all_devices()
-        window["-PROGRAM_STATUS-"].update("UNKNOWN ERROR")
-        print(f"Error caught: {ex}")
+        window["-PROGRAM_STATUS-"].update("CRITICAL ERROR")
+        print(f"CRITICAL ERROR OCCURRED\nError caught: {ex}")
         if BEEP_ENABLED:
             winsound.Beep(1000, 500)
+        event, values = window.read()
+        if event == sg.WIN_CLOSED or event == "Quit":
+            window["Stop"].update(disabled=True)
+            window["Quit"].update(disabled=True)
+            window.close()
 
     # Close program
     await stop_all_devices()
