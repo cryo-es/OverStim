@@ -221,7 +221,7 @@ async def run_overstim():
 
                 counter += 1
                 if player.is_dead:
-                    if current_time >= last_refresh + (1/DEAD_REFRESH_RATE):
+                    if current_time >= last_refresh + (1/float(DEAD_REFRESH_RATE)):
                         last_refresh = current_time
                         player.refresh()
                 else:
@@ -261,57 +261,56 @@ async def run_overstim():
                                 await alter_intensity(BEING_ORBED_VIBE_INTENSITY, "being orbed")
                                 being_orbed_vibe_active = True
 
-                    if player.hero == "Mercy":
-                        if VIBE_FOR_RESURRECT:
-                            #TODO: Should consider allowing multiple active vibes for resurrect. What if people use a long duration and a lower intensity?
-                            if player.resurrecting and len(timed_vibes["resurrect"]) == 0:
-                                await alter_intensity_for_duration("resurrect", RESURRECT_VIBE_INTENSITY, RESURRECT_VIBE_DURATION)
-                        if VIBE_FOR_MERCY_BEAM:
-                            if player.heal_beam:
-                                if not heal_beam_vibe_active:
-                                    if damage_beam_vibe_active:
-                                        await alter_intensity(HEAL_BEAM_VIBE_INTENSITY-DAMAGE_BEAM_VIBE_INTENSITY, "heal beaming")
-                                        heal_beam_vibe_active = True
-                                        damage_beam_vibe_active = False
-                                    else:
-                                        await alter_intensity(HEAL_BEAM_VIBE_INTENSITY, "heal beaming")
-                                        heal_beam_vibe_active = True
-                            elif player.damage_beam:
-                                if not damage_beam_vibe_active:
-                                    if heal_beam_vibe_active:
-                                        await alter_intensity(DAMAGE_BEAM_VIBE_INTENSITY-HEAL_BEAM_VIBE_INTENSITY, "damage beaming")
-                                        damage_beam_vibe_active = True
-                                        heal_beam_vibe_active = False
-                                    else:
-                                        await alter_intensity(DAMAGE_BEAM_VIBE_INTENSITY, "damage beaming")
-                                        damage_beam_vibe_active = True
-                            elif heal_beam_vibe_active:
-                                await alter_intensity(-HEAL_BEAM_VIBE_INTENSITY, "stopped heal beaming")
-                                heal_beam_vibe_active = False
-                            elif damage_beam_vibe_active:
-                                await alter_intensity(-DAMAGE_BEAM_VIBE_INTENSITY, "stopped damage beaming")
-                                damage_beam_vibe_active = False
-
-                    elif player.hero == "Zenyatta":
-                        if VIBE_FOR_HARMONY_ORB:
-                            #TODO: Turn some of these ifs inside out
-                            if harmony_orb_vibe_active:
-                                if not player.harmony_orb:
-                                    await alter_intensity(-HARMONY_ORB_VIBE_INTENSITY, "stopped harmony orb")
-                                    harmony_orb_vibe_active = False
-                            else:
-                                if player.harmony_orb:
-                                    await alter_intensity(HARMONY_ORB_VIBE_INTENSITY, "harmony orb")
-                                    harmony_orb_vibe_active = True
-                        if VIBE_FOR_DISCORD_ORB:
-                            if discord_orb_vibe_active:
-                                if not player.discord_orb:
-                                    await alter_intensity(-DISCORD_ORB_VIBE_INTENSITY, "stopped discord orb")
-                                    discord_orb_vibe_active = False
-                            else:
-                                if player.discord_orb:
-                                    await alter_intensity(DISCORD_ORB_VIBE_INTENSITY, "discord orb")
-                                    discord_orb_vibe_active = True
+                    # Mercy
+                    if VIBE_FOR_RESURRECT:
+                        #TODO: Should consider allowing multiple active vibes for resurrect. What if people use a long duration and a lower intensity?
+                        if player.resurrecting and len(timed_vibes["resurrect"]) == 0:
+                            await alter_intensity_for_duration("resurrect", RESURRECT_VIBE_INTENSITY, RESURRECT_VIBE_DURATION)
+                    if VIBE_FOR_MERCY_BEAM:
+                        if player.heal_beam:
+                            if not heal_beam_vibe_active:
+                                if damage_beam_vibe_active:
+                                    await alter_intensity(HEAL_BEAM_VIBE_INTENSITY-DAMAGE_BEAM_VIBE_INTENSITY, "heal beaming")
+                                    heal_beam_vibe_active = True
+                                    damage_beam_vibe_active = False
+                                else:
+                                    await alter_intensity(HEAL_BEAM_VIBE_INTENSITY, "heal beaming")
+                                    heal_beam_vibe_active = True
+                        elif player.damage_beam:
+                            if not damage_beam_vibe_active:
+                                if heal_beam_vibe_active:
+                                    await alter_intensity(DAMAGE_BEAM_VIBE_INTENSITY-HEAL_BEAM_VIBE_INTENSITY, "damage beaming")
+                                    damage_beam_vibe_active = True
+                                    heal_beam_vibe_active = False
+                                else:
+                                    await alter_intensity(DAMAGE_BEAM_VIBE_INTENSITY, "damage beaming")
+                                    damage_beam_vibe_active = True
+                        elif heal_beam_vibe_active:
+                            await alter_intensity(-HEAL_BEAM_VIBE_INTENSITY, "stopped heal beaming")
+                            heal_beam_vibe_active = False
+                        elif damage_beam_vibe_active:
+                            await alter_intensity(-DAMAGE_BEAM_VIBE_INTENSITY, "stopped damage beaming")
+                            damage_beam_vibe_active = False
+                    #Zenyatta
+                    if VIBE_FOR_HARMONY_ORB:
+                        #TODO: Turn some of these ifs inside out
+                        if harmony_orb_vibe_active:
+                            if not player.harmony_orb:
+                                await alter_intensity(-HARMONY_ORB_VIBE_INTENSITY, "stopped harmony orb")
+                                harmony_orb_vibe_active = False
+                        else:
+                            if player.harmony_orb:
+                                await alter_intensity(HARMONY_ORB_VIBE_INTENSITY, "harmony orb")
+                                harmony_orb_vibe_active = True
+                    if VIBE_FOR_DISCORD_ORB:
+                        if discord_orb_vibe_active:
+                            if not player.discord_orb:
+                                await alter_intensity(-DISCORD_ORB_VIBE_INTENSITY, "stopped discord orb")
+                                discord_orb_vibe_active = False
+                        else:
+                            if player.discord_orb:
+                                await alter_intensity(DISCORD_ORB_VIBE_INTENSITY, "discord orb")
+                                discord_orb_vibe_active = True
 
                     if player.detected_hero != player.hero:
                         print(f"Hero switch detected: {player.detected_hero}")
@@ -344,7 +343,7 @@ async def run_overstim():
                 break
             
             duration = time.time() - start_time
-            print(f"Loops: {counter} | Loops per second: {round(counter/(duration), 2)} | Avg. time: {round(1000 * (duration/counter), 2)}ms")
+            print(f"Loops: {counter} | Loops per second: {round(counter/duration, 2)} | Avg. time: {round(1000 * (duration/counter), 2)}ms")
             window.refresh()
             
             player.stop_tracking()
