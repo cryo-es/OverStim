@@ -195,7 +195,7 @@ class OverwatchStateTracker:
             self.mercy_damage_beam_buffer = 0
             if not self.damage_beam:
                 self.damage_beam = True
-                self.damage_beam = False
+                self.heal_beam = False
                 #self.mercy_damage_beam_buffer = 0
         else:
             if self.damage_beam:
