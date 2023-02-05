@@ -4,13 +4,27 @@ import logging
 import asyncio
 import time
 import sys
+import os
+import re
 
 from buttplug import Client, WebsocketConnector, ProtocolSpec
 import PySimpleGUI as sg
+import psutil as ps
 
 from owstate import OverwatchStateTracker
-from owcv import resource_path
 
+
+def resource_path(relative_path):
+    return os.path.join(os.path.abspath("."), relative_path)
+
+def kill_other_overstim_instances():
+    current_pid = os.getpid()
+    for p in ps.process_iter():
+        is_instance_of_overstim = re.search("OverStim_v\d{1,3}\.\d{1,3}\.\d{1,3}\.exe$", p.name())
+        if is_instance_of_overstim:
+            is_this_instance = (p.pid == current_pid)
+            if not is_this_instance:
+                p.terminate()
 
 def update_device_count(last_device_count):
     current_device_count = len(client.devices)
@@ -30,7 +44,10 @@ async def stop_all_devices():
             print("A device experienced an error while being stopped.")
             print(err)
     print("Stopped all devices.")
-    window["-CURRENT_INTENSITY-"].update(f"{int(current_intensity*100)}%")
+    try:
+        window["-CURRENT_INTENSITY-"].update(f"{int(current_intensity*100)}%")
+    except Exception as err:
+        print(f"Experienced an error while updating the window:\n{err}")
 
 def get_expired_items(array, expiry_index):
     current_time = time.time()
@@ -121,6 +138,7 @@ async def run_overstim():
         VIBE_FOR_BEING_BEAMED = config["OverStim"].getboolean("VIBE_FOR_BEING_BEAMED")
         VIBE_FOR_BEING_ORBED = config["OverStim"].getboolean("VIBE_FOR_BEING_ORBED")
         BEING_BEAMED_VIBE_INTENSITY =config["OverStim"].getfloat("BEING_BEAMED_VIBE_INTENSITY")
+        BEING_ORBED_VIBE_INTENSITY =config["OverStim"].getfloat("BEING_ORBED_VIBE_INTENSITY")
         VIBE_FOR_RESURRECT = config["OverStim"].getboolean("VIBE_FOR_RESURRECT")
         RESURRECT_VIBE_INTENSITY = config["OverStim"].getfloat("RESURRECT_VIBE_INTENSITY")
         RESURRECT_VIBE_DURATION = config["OverStim"].getfloat("RESURRECT_VIBE_DURATION")
@@ -142,8 +160,8 @@ async def run_overstim():
     # Initialize variables
     if not config_fault[0]:
         player = OverwatchStateTracker()
-        player.neg_required_confs = MERCY_BEAM_DISCONNECT_BUFFER
-        player.zen_orb_neg_confs = ZEN_ORB_DISCONNECT_BUFFER
+        player.mercy_beam_disconnect_buffer_size = MERCY_BEAM_DISCONNECT_BUFFER
+        player.zen_orb_disconnect_buffer_size = ZEN_ORB_DISCONNECT_BUFFER
     heal_beam_vibe_active = False
     damage_beam_vibe_active = False
     being_beamed_vibe_active = False
@@ -312,7 +330,7 @@ async def run_overstim():
                                 await alter_intensity(DISCORD_ORB_VIBE_INTENSITY, "discord orb")
                                 discord_orb_vibe_active = True
 
-                    if player.detected_hero != player.hero:
+                    if player.hero_auto_detect and player.detected_hero != player.hero:
                         print(f"Hero switch detected: {player.detected_hero}")
                         window["-HERO_SELECTOR-"].update(player.detected_hero)
                         player.switch_hero(player.detected_hero)
@@ -443,6 +461,11 @@ async def main():
                 print("Disconnected.")
     window.close()
     print("Quitting.")
+
+#Start
+
+#Only allow one instance of OverStim to be running
+kill_other_overstim_instances()
 
 # Import config
 config = configparser.ConfigParser()
