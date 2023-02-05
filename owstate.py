@@ -29,11 +29,11 @@ class OverwatchStateTracker:
             "damage_beam",
             ]
         self.owcv = ComputerVision(coords, to_mask)
+        self.current_time = 0
         self.hero = "Other"
         self.detected_hero = "Other"
         self.detected_hero_time = 0
         self.hero_auto_detect = True
-        self.current_time = 0
         self.in_killcam = False
         self.death_spectating = False
         self.is_dead = False
@@ -47,16 +47,15 @@ class OverwatchStateTracker:
         self.heal_beam = False
         self.damage_beam = False
         self.resurrecting = False
-        self.heal_beam_active_confs = 0
-        self.damage_beam_active_confs = 0
-        self.pos_required_confs = 1
-        self.neg_required_confs = 8
+        self.mercy_heal_beam_buffer = 0
+        self.mercy_damage_beam_buffer = 0
+        self.mercy_beam_disconnect_buffer_size = 8
         self.harmony_orb = False
         self.discord_orb = False
         self.harmony_orb_buffer = 0
         self.discord_orb_buffer = 0
-        # Orb takes up to 0.8s to reconnect
-        self.zen_orb_neg_confs = 30
+        # Orb takes up to 0.8s to switch targets at max range (w/ ~40ms RTT)
+        self.zen_orb_disconnect_buffer_size = 30
 
     def refresh(self, capture_frame_only=False):
         self.owcv.capture_frame()
@@ -95,42 +94,16 @@ class OverwatchStateTracker:
             if self.hero == "Mercy":
                 self.detect_mercy_beams()
 
-                #if self.new_saves > 0: # Causes resurrect to never toggle off
                 if self.count_notifs_of_type("save") > 0:
                     self.resurrecting = self.owcv.detect_single("resurrect_cd")
 
             elif self.hero == "Zenyatta":
-                if self.owcv.detect_single("zen_harmony"):
-                    self.harmony_orb_buffer = 0
-                    if not self.harmony_orb:
-                        self.harmony_orb = True
-                else:
-                    if self.harmony_orb:
-                        self.harmony_orb_buffer -= 1
-                        if self.harmony_orb_buffer == -self.zen_orb_neg_confs:
-                            self.harmony_orb = False
+                self.detect_zen_orbs()
 
-                if self.owcv.detect_single("zen_discord"):
-                    self.discord_orb_buffer = 0
-                    if not self.discord_orb:
-                        self.discord_orb = True
-                else:
-                    if self.discord_orb:
-                        self.discord_orb_buffer -= 1
-                        if self.discord_orb_buffer == -self.zen_orb_neg_confs:
-                            self.discord_orb = False
-
-            # Detect hero swaps
-            # Triggers for one whole second every 3 seconds, should improve this to trigger for shorter but more frequently
-            if self.hero_auto_detect and int(self.current_time) % 3 == 0:
-                    if self.owcv.detect_single("zen_weapon", threshold=0.97):
-                        self.detected_hero = "Zenyatta"
-                        self.detected_hero_time = self.current_time
-                    elif self.owcv.detect_single("mercy_staff", threshold=0.97) or self.owcv.detect_single("mercy_pistol", threshold=0.97):
-                        self.detected_hero = "Mercy"
-                        self.detected_hero_time = self.current_time
-                    elif self.detected_hero != "Other" and self.current_time > self.detected_hero_time + 8:
-                        self.detected_hero = "Other"
+            # Detect hero swaps for 0.1 second every 3 seconds
+            current_second = self.current_time - int(self.current_time/10)*10
+            if self.hero_auto_detect and int(current_second) % 3 == 0 and current_second % 1 < 0.1:
+                self.detect_hero()
 
         # If player is dead:
         else:
@@ -143,13 +116,24 @@ class OverwatchStateTracker:
                     self.damage_beam = False
                     self.resurrecting = False
 
+    def detect_hero(self):
+        if self.owcv.detect_single("zen_weapon", threshold=0.97):
+            self.detected_hero = "Zenyatta"
+            self.detected_hero_time = self.current_time
+        elif self.owcv.detect_single("mercy_staff", threshold=0.97) or self.owcv.detect_single("mercy_pistol", threshold=0.97):
+            self.detected_hero = "Mercy"
+            self.detected_hero_time = self.current_time
+        #If no supported hero has been detected within the last 8 seconds:
+        elif self.detected_hero != "Other" and self.current_time > self.detected_hero_time + 8:
+            self.detected_hero = "Other"
+
     def switch_hero(self, hero_name):
         if self.hero == "Mercy":
             self.heal_beam = False
             self.damage_beam = False
             self.resurrecting = False
-            self.heal_beam_active_confs = 0
-            self.damage_beam_active_confs = 0
+            self.mercy_heal_beam_buffer = 0
+            self.mercy_damage_beam_buffer = 0
         elif self.hero == "Zenyatta":
             self.harmony_orb = False
             self.discord_orb = False
@@ -196,44 +180,49 @@ class OverwatchStateTracker:
 
     def detect_mercy_beams(self):
         if self.owcv.detect_single("heal_beam"):
-            if self.heal_beam_active_confs == self.pos_required_confs:
-                if not self.heal_beam:
-                    self.heal_beam = True
-                    self.damage_beam = False
-            else:
-                if self.heal_beam_active_confs <= 0:
-                    self.heal_beam_active_confs = 1
-                else:
-                    self.heal_beam_active_confs += 1
+            self.mercy_heal_beam_buffer = 0
+            if not self.heal_beam:
+                self.heal_beam = True
+                self.damage_beam = False
+                #self.mercy_damage_beam_buffer = 0
         else:
-            if self.heal_beam_active_confs == (0 - self.neg_required_confs):
-                if self.heal_beam:
+            if self.heal_beam:
+                self.mercy_heal_beam_buffer -= 1
+                if self.mercy_heal_beam_buffer == -self.mercy_beam_disconnect_buffer_size:
                     self.heal_beam = False
-            else:
-                if self.heal_beam_active_confs >= 0:
-                    self.heal_beam_active_confs = -1
-                else:
-                    self.heal_beam_active_confs -= 1
 
         if self.owcv.detect_single("damage_beam"):
-            if self.damage_beam_active_confs == self.pos_required_confs:
-                if not self.damage_beam:
-                    self.damage_beam = True
-                    self.heal_beam = False
-            else:
-                if self.damage_beam_active_confs <= 0:
-                    self.damage_beam_active_confs = 1
-                else:
-                    self.damage_beam_active_confs += 1
+            self.mercy_damage_beam_buffer = 0
+            if not self.damage_beam:
+                self.damage_beam = True
+                self.damage_beam = False
+                #self.mercy_damage_beam_buffer = 0
         else:
-            if self.damage_beam_active_confs == (0 - self.neg_required_confs):
-                if self.damage_beam:
+            if self.damage_beam:
+                self.mercy_damage_beam_buffer -= 1
+                if self.mercy_damage_beam_buffer == -self.mercy_beam_disconnect_buffer_size:
                     self.damage_beam = False
-            else:
-                if self.damage_beam_active_confs >= 0:
-                    self.damage_beam_active_confs = -1
-                else:
-                    self.damage_beam_active_confs -= 1
+
+    def detect_zen_orbs(self):
+        if self.owcv.detect_single("zen_harmony"):
+            self.harmony_orb_buffer = 0
+            if not self.harmony_orb:
+                self.harmony_orb = True
+        else:
+            if self.harmony_orb:
+                self.harmony_orb_buffer -= 1
+                if self.harmony_orb_buffer == -self.zen_orb_disconnect_buffer_size:
+                    self.harmony_orb = False
+
+        if self.owcv.detect_single("zen_discord"):
+            self.discord_orb_buffer = 0
+            if not self.discord_orb:
+                self.discord_orb = True
+        else:
+            if self.discord_orb:
+                self.discord_orb_buffer -= 1
+                if self.discord_orb_buffer == -self.zen_orb_disconnect_buffer_size:
+                    self.discord_orb = False
 
     def start_tracking(self, refresh_rate):
         self.owcv.start_capturing(refresh_rate)
