@@ -6,6 +6,7 @@ import time
 import sys
 import os
 import re
+import random
 
 from buttplug import Client, WebsocketConnector, ProtocolSpec
 import PySimpleGUI as sg
@@ -119,9 +120,27 @@ async def alter_intensity_for_duration(event_type, amount, duration):
 
 async def update_intensity():
     for event_type in timed_vibes:
-        for expired_vibe in get_expired_items(timed_vibes[event_type], 0):
-            timed_vibes[event_type].remove(expired_vibe)
-            await alter_intensity(-expired_vibe[1], f"{event_type} expired")
+        if event_type != "hacked":
+            for expired_vibe in get_expired_items(timed_vibes[event_type], 0):
+                timed_vibes[event_type].remove(expired_vibe)
+                await alter_intensity(-expired_vibe[1], f"{event_type} expired")
+        else:
+            # Handles intensity randomization, len() will return 0 unless randomization is enabled and player is hacked
+            if len(timed_vibes[event_type]) != 0:
+                randomization_settings = timed_vibes[event_type][0]
+                amount = randomization_settings["Amount"]
+                frequency = randomization_settings["Frequency"]
+                last_change = randomization_settings["Last Change"]
+                current_time = time.time()
+                if current_time >= last_change + frequency:
+                    if current_intensity + amount > 1:
+                        if random.choice([True, False]):
+                            await alter_intensity(-amount, "hacked")
+                    elif current_intensity - amount < 0:
+                        await alter_intensity(amount, "hacked")
+                    else:
+                        await alter_intensity(random.choice([amount, -amount]), "hacked")
+                last_change = current_time
 
 async def run_overstim():
     # Define constants
@@ -137,6 +156,7 @@ async def run_overstim():
         SAVE_VIBE_DURATION = config["OverStim"].getfloat("SAVE_VIBE_DURATION")
         VIBE_FOR_BEING_BEAMED = config["OverStim"].getboolean("VIBE_FOR_BEING_BEAMED")
         VIBE_FOR_BEING_ORBED = config["OverStim"].getboolean("VIBE_FOR_BEING_ORBED")
+        HACKED_EVENT = config["OverStim"].getint("HACKED_EVENT")
         BEING_BEAMED_VIBE_INTENSITY =config["OverStim"].getfloat("BEING_BEAMED_VIBE_INTENSITY")
         BEING_ORBED_VIBE_INTENSITY =config["OverStim"].getfloat("BEING_ORBED_VIBE_INTENSITY")
         VIBE_FOR_RESURRECT = config["OverStim"].getboolean("VIBE_FOR_RESURRECT")
@@ -162,10 +182,11 @@ async def run_overstim():
         player = OverwatchStateTracker()
         player.mercy_beam_disconnect_buffer_size = MERCY_BEAM_DISCONNECT_BUFFER
         player.zen_orb_disconnect_buffer_size = ZEN_ORB_DISCONNECT_BUFFER
-    heal_beam_vibe_active = False
-    damage_beam_vibe_active = False
     being_beamed_vibe_active = False
     being_orbed_vibe_active = False
+    hacked_effect_active = False
+    heal_beam_vibe_active = False
+    damage_beam_vibe_active = False
     harmony_orb_vibe_active = False
     discord_orb_vibe_active = False
     last_refresh = 0
@@ -246,38 +267,65 @@ async def run_overstim():
                     last_refresh = current_time
                     player.refresh()
 
-                    if VIBE_FOR_ELIM:
-                        if player.new_eliminations > 0:
-                            await alter_intensity_for_duration("elim", player.new_eliminations * ELIM_VIBE_INTENSITY, ELIM_VIBE_DURATION)
+                    if not hacked_effect_active:
+                        if VIBE_FOR_ELIM:
+                            if player.new_eliminations > 0:
+                                await alter_intensity_for_duration("elim", player.new_eliminations * ELIM_VIBE_INTENSITY, ELIM_VIBE_DURATION)
 
-                    if VIBE_FOR_ASSIST:
-                        if player.new_assists > 0:
-                            await alter_intensity_for_duration("assist", player.new_assists * ASSIST_VIBE_INTENSITY, ASSIST_VIBE_DURATION)
-                    
-                    if VIBE_FOR_SAVE:
-                        if player.new_saves > 0:
-                            if not player.resurrecting:
-                                await alter_intensity_for_duration("save", player.new_saves * SAVE_VIBE_INTENSITY, SAVE_VIBE_DURATION)
+                        if VIBE_FOR_ASSIST:
+                            if player.new_assists > 0:
+                                await alter_intensity_for_duration("assist", player.new_assists * ASSIST_VIBE_INTENSITY, ASSIST_VIBE_DURATION)
+                        
+                        if VIBE_FOR_SAVE:
+                            if player.new_saves > 0:
+                                if not player.resurrecting:
+                                    await alter_intensity_for_duration("save", player.new_saves * SAVE_VIBE_INTENSITY, SAVE_VIBE_DURATION)
 
-                    if VIBE_FOR_BEING_BEAMED:
-                        if being_beamed_vibe_active:
-                            if not player.being_beamed:
-                                await alter_intensity(-BEING_BEAMED_VIBE_INTENSITY, "stopped being beamed")
-                                being_beamed_vibe_active = False
+                        if VIBE_FOR_BEING_BEAMED:
+                            if being_beamed_vibe_active:
+                                if not player.being_beamed:
+                                    await alter_intensity(-BEING_BEAMED_VIBE_INTENSITY, "stopped being beamed")
+                                    being_beamed_vibe_active = False
+                            else:
+                                if player.being_beamed:
+                                    await alter_intensity(BEING_BEAMED_VIBE_INTENSITY, "being beamed")
+                                    being_beamed_vibe_active = True
+
+                        if VIBE_FOR_BEING_ORBED:
+                            if being_orbed_vibe_active:
+                                if not player.being_orbed:
+                                    await alter_intensity(-BEING_ORBED_VIBE_INTENSITY, "stopped being orbed")
+                                    being_orbed_vibe_active = False
+                            else:
+                                if player.being_orbed:
+                                    await alter_intensity(BEING_ORBED_VIBE_INTENSITY, "being orbed")
+                                    being_orbed_vibe_active = True
+
+                    if HACKED_EVENT == 1:
+                        if hacked_effect_active:
+                            if not player.hacked:
+                                await alter_intensity(0, "stopped being hacked")
+                                hacked_effect_active = False
                         else:
-                            if player.being_beamed:
-                                await alter_intensity(BEING_BEAMED_VIBE_INTENSITY, "being beamed")
-                                being_beamed_vibe_active = True
-
-                    if VIBE_FOR_BEING_ORBED:
-                        if being_orbed_vibe_active:
-                            if not player.being_orbed:
-                                await alter_intensity(-BEING_ORBED_VIBE_INTENSITY, "stopped being orbed")
-                                being_orbed_vibe_active = False
+                            if player.hacked:
+                                for key in timed_vibes:
+                                    timed_vibes[key].clear()
+                                await alter_intensity(-current_intensity, "hacked")
+                                hacked_effect_active = True
+                    elif HACKED_EVENT == 2:
+                        if hacked_effect_active:
+                            if not player.hacked:
+                                for key in timed_vibes:
+                                    timed_vibes[key].clear()
+                                await alter_intensity(-current_intensity, "stopped being hacked")
+                                hacked_effect_active = False
                         else:
-                            if player.being_orbed:
-                                await alter_intensity(BEING_ORBED_VIBE_INTENSITY, "being orbed")
-                                being_orbed_vibe_active = True
+                            if player.hacked:
+                                for key in timed_vibes:
+                                    timed_vibes[key].clear()
+                                await alter_intensity(0.5, "hacked")
+                                timed_vibes["hacked"].append({"Amount":0.25, "Frequency":0.2, "Last Change":0})
+                                hacked_effect_active = True
 
                     # Mercy
                     if VIBE_FOR_RESURRECT:
@@ -490,6 +538,7 @@ timed_vibes = {key:[] for key in [
     "assist",
     "save",
     "resurrect",
+    "hacked",
     ]}
 
 client = Client("OverStim", ProtocolSpec.v3)
