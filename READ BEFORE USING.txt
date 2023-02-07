@@ -1,11 +1,12 @@
 If you're opening this in Notepad:
-Click Format > Word Wrap.
-It's easier to read with Word Wrap enabled.
+It may be easier to read with Word Wrap enabled.
+On Windows 10: Click Format > Word Wrap
+On Windows 11: Click View > Word Wrap
 
 Thanks for helping test OverStim!
 
 Before running OverStim for the first time, you should open the config file to see what's inside.
-OverStim is highly customizable, and some features come disabled by default.
+OverStim is highly customizable. Some features come disabled by default, and all features can be tweaked as per your preferences.
 Settings you might want to change:
 
 MAX_VIBE_INTENSITY:
