@@ -19,7 +19,7 @@ class OverwatchStateTracker:
             "being_beamed":[762, 807, 460, 508],
             "being_orbed":[859, 885, 170, 196],
             "overtime":[37, 57, 903, 1016],
-            "hacked":[860, 884, 169, 193],
+            "hacked":[860, 884, 169, 196],
             "zen_weapon":[945, 993, 1701, 1765],
             "zen_harmony":[954, 986, 738, 762],
             "zen_discord":[954, 985, 1157, 1182],
@@ -44,6 +44,7 @@ class OverwatchStateTracker:
         self.new_saves = 0
         self.being_beamed = False
         self.being_orbed = False
+        self.hacked = False
         self.heal_beam = False
         self.damage_beam = False
         self.resurrecting = False
@@ -91,6 +92,8 @@ class OverwatchStateTracker:
 
             self.being_orbed = self.owcv.detect_single("being_orbed")
 
+            self.hacked = self.owcv.detect_single("hacked")
+
             if self.hero == "Mercy":
                 self.detect_mercy_beams()
 
@@ -111,6 +114,7 @@ class OverwatchStateTracker:
                 self.is_dead = True
                 self.being_beamed = False
                 self.being_orbed = False
+                self.hacked = False
                 if self.hero == "Mercy":
                     self.heal_beam = False
                     self.damage_beam = False
@@ -196,7 +200,7 @@ class OverwatchStateTracker:
             if not self.damage_beam:
                 self.damage_beam = True
                 self.heal_beam = False
-                #self.mercy_damage_beam_buffer = 0
+                #self.mercy_heal_beam_buffer = 0
         else:
             if self.damage_beam:
                 self.mercy_damage_beam_buffer -= 1
