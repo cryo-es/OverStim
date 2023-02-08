@@ -22,6 +22,7 @@ Optional Settings (all disabled by default):
 - **Being orbed by Zenyatta:** +30% intensity while active
 
 Known Issues:
+- New OW2 update changed what some icons look like, so detection will be borked for a day or two until I fix it
 - Some features don't work with colourblind settings enabled.
 - Poor detection of Mercy's heal beam at 2560x1440p.
 - Probably doesn't work at aspect ratios other than 16:9.
