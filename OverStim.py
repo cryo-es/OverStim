@@ -134,7 +134,7 @@ async def update_intensity():
                 current_time = time.time()
                 if current_time >= last_change + frequency:
                     if current_intensity + amount > 1:
-                        if random.choice([True, False]):
+                        if random.choice([True, False, False]):
                             await alter_intensity(-amount, "hacked")
                     elif current_intensity - amount < 0:
                         await alter_intensity(amount, "hacked")
@@ -259,11 +259,7 @@ async def run_overstim():
                 current_time = time.time()
 
                 counter += 1
-                if player.is_dead:
-                    if current_time >= last_refresh + (1/float(DEAD_REFRESH_RATE)):
-                        last_refresh = current_time
-                        player.refresh()
-                else:
+                if (not player.is_dead) or (player.is_dead and current_time >= last_refresh + (1/float(DEAD_REFRESH_RATE))):
                     last_refresh = current_time
                     player.refresh()
 
