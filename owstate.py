@@ -11,8 +11,8 @@ class OverwatchStateTracker:
             "save":[749, 850, 727, 922],
             "killcam":[89, 107, 41, 69],
             "death_spec":[66, 86, 1416, 1574],
-            "heal_beam":[650, 730, 790, 860],
-            "damage_beam":[658, 719, 1065, 1126],
+            "heal_beam":[672, 706, 807, 841],
+            "damage_beam":[673, 705, 1080, 1112],
             "mercy_staff":[949, 988, 1681, 1762],
             "mercy_pistol":[947, 987, 1681, 1741],
             "resurrect_cd":[920, 1000, 1580, 1655],
@@ -20,13 +20,11 @@ class OverwatchStateTracker:
             "being_orbed":[859, 885, 170, 196],
             "overtime":[37, 57, 903, 1016],
             "hacked":[860, 884, 169, 196],
-            "zen_weapon":[945, 993, 1701, 1765],
+            "zen_weapon":[949, 988, 1710, 1761],
             "zen_harmony":[954, 986, 738, 762],
             "zen_discord":[954, 985, 1157, 1182],
             }
         to_mask = [
-            "heal_beam",
-            "damage_beam",
             ]
         self.owcv = ComputerVision(coords, to_mask)
         self.current_time = 0
