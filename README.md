@@ -20,6 +20,7 @@ Optional Settings (all disabled by default):
 - **Saved someone:** +50% intensity for 4 seconds
 - **Being beamed by Mercy:** +30% intensity while active
 - **Being orbed by Zenyatta:** +30% intensity while active
+- **Hacked by Sombra:** Either disable all vibration, or randomize it
 
 Known Issues:
 - Some features don't work with colourblind settings enabled.
