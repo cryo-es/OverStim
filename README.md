@@ -22,9 +22,7 @@ Optional Settings (all disabled by default):
 - **Being orbed by Zenyatta:** +30% intensity while active
 
 Known Issues:
-- New OW2 update changed what some icons look like, so detection will be borked for a day or two until I fix it
 - Some features don't work with colourblind settings enabled.
-- Poor detection of Mercy's heal beam at 2560x1440p.
 - Probably doesn't work at aspect ratios other than 16:9.
 - High latency to the game server causes Mercy's beam to reconnect to people slower when switching beam types. This can cause temporary gaps in vibration.
-- Only works on Windows.
+- Only works on Windows (come join the Discord if you want Linux support, one guy managed to get it working).
