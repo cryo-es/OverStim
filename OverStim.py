@@ -18,6 +18,7 @@ from owstate import OverwatchStateTracker
 def resource_path(relative_path):
     return os.path.join(os.path.abspath("."), relative_path)
 
+
 def kill_other_overstim_instances():
     current_pid = os.getpid()
     for p in ps.process_iter():
@@ -27,13 +28,16 @@ def kill_other_overstim_instances():
             if not is_this_instance:
                 p.terminate()
 
+
 def update_device_count(last_device_count):
     current_device_count = len(client.devices)
     if current_device_count != last_device_count:
         window["-DEVICE_COUNT-"].update(current_device_count)
         return current_device_count
 
+
 async def stop_all_devices():
+    global current_intensity
     for key in timed_vibes:
         timed_vibes[key].clear()
     current_intensity = 0
@@ -46,9 +50,10 @@ async def stop_all_devices():
             print(err)
     print("Stopped all devices.")
     try:
-        window["-CURRENT_INTENSITY-"].update(f"{int(current_intensity*100)}%")
+        window["-CURRENT_INTENSITY-"].update(f"{int(current_intensity * 100)}%")
     except Exception as err:
         print(f"Experienced an error while updating the window:\n{err}")
+
 
 def get_expired_items(array, expiry_index):
     current_time = time.time()
@@ -58,6 +63,7 @@ def get_expired_items(array, expiry_index):
             expired_items.append(item)
     return expired_items
 
+
 def limit_value(value, max_value, min_value=0, value_name="value"):
     if value > max_value:
         value = max_value
@@ -66,9 +72,11 @@ def limit_value(value, max_value, min_value=0, value_name="value"):
         value = min_value
     return value
 
+
 def round_value_to_nearest_step(value, step):
     digits_to_round_to = len(str(float(step)).split(".")[1])
     return round(step * round(value / step, 0), digits_to_round_to)
+
 
 async def alter_intensity(amount, event_type):
     global current_intensity
@@ -84,6 +92,7 @@ async def alter_intensity(amount, event_type):
     for device_id in client.devices:
         device = client.devices[device_id]
         try:
+            # Should handle it better than this
             if device.name != "XBox (XInput) Compatible Gamepad":
                 # Send new intensity to every actuator within the device
                 actuator_intensities = []
@@ -97,11 +106,11 @@ async def alter_intensity(amount, event_type):
                     actuator_intensity = limit_value(round_value_to_nearest_step(current_intensity, actuator_min_intensity_step), actuator_max_intensity, value_name="actuator intensity")
                     actuator_intensities.append(actuator_intensity)
                     await device.actuators[0].command(actuator_intensity)
-                
+
                 # Print new intensities of device actuators
                 intensity_string = f"[{device.name}] Vibe 1: {actuator_intensities[0]}"
                 for index in range(len(actuator_intensities) - 1):
-                    intensity_string = f"{intensity_string}, Vibe {index+2}: {actuator_intensities[index + 1]}"
+                    intensity_string = f"{intensity_string}, Vibe {index + 2}: {actuator_intensities[index + 1]}"
                 print(intensity_string)
 
         except Exception as err:
@@ -110,13 +119,15 @@ async def alter_intensity(amount, event_type):
             await device.stop()
 
     # Update the GUI with new intensity, and beep if enabled.
-    window["-CURRENT_INTENSITY-"].update(str(int(current_intensity*100)) + ("%" if current_intensity == real_intensity else f"% (max {int(MAX_VIBE_INTENSITY*100)}%)"))
+    window["-CURRENT_INTENSITY-"].update(str(int(current_intensity * 100)) + ("%" if current_intensity == real_intensity else f"% (max {int(MAX_VIBE_INTENSITY * 100)}%)"))
     if BEEP_ENABLED:
-        winsound.Beep(int(1000 + (real_intensity*5000)), 20)
+        winsound.Beep(int(1000 + (real_intensity * 5000)), 20)
+
 
 async def alter_intensity_for_duration(event_type, amount, duration):
     timed_vibes[event_type].append([time.time() + duration, amount])
     await alter_intensity(amount, event_type)
+
 
 async def update_intensity():
     for event_type in timed_vibes:
@@ -142,6 +153,7 @@ async def update_intensity():
                         await alter_intensity(random.choice([amount, -amount]), "hacked")
                 last_change = current_time
 
+
 async def run_overstim():
     # Define constants
     try:
@@ -157,18 +169,24 @@ async def run_overstim():
         VIBE_FOR_BEING_BEAMED = config["OverStim"].getboolean("VIBE_FOR_BEING_BEAMED")
         VIBE_FOR_BEING_ORBED = config["OverStim"].getboolean("VIBE_FOR_BEING_ORBED")
         HACKED_EVENT = config["OverStim"].getint("HACKED_EVENT")
-        BEING_BEAMED_VIBE_INTENSITY =config["OverStim"].getfloat("BEING_BEAMED_VIBE_INTENSITY")
-        BEING_ORBED_VIBE_INTENSITY =config["OverStim"].getfloat("BEING_ORBED_VIBE_INTENSITY")
-        VIBE_FOR_RESURRECT = config["OverStim"].getboolean("VIBE_FOR_RESURRECT")
-        RESURRECT_VIBE_INTENSITY = config["OverStim"].getfloat("RESURRECT_VIBE_INTENSITY")
-        RESURRECT_VIBE_DURATION = config["OverStim"].getfloat("RESURRECT_VIBE_DURATION")
-        VIBE_FOR_MERCY_BEAM = config["OverStim"].getboolean("VIBE_FOR_MERCY_BEAM")
-        HEAL_BEAM_VIBE_INTENSITY = config["OverStim"].getfloat("HEAL_BEAM_VIBE_INTENSITY")
-        DAMAGE_BEAM_VIBE_INTENSITY = config["OverStim"].getfloat("DAMAGE_BEAM_VIBE_INTENSITY")
-        VIBE_FOR_HARMONY_ORB = config["OverStim"].getboolean("VIBE_FOR_HARMONY_ORB")
-        HARMONY_ORB_VIBE_INTENSITY = config["OverStim"].getfloat("HARMONY_ORB_VIBE_INTENSITY")
-        VIBE_FOR_DISCORD_ORB = config["OverStim"].getboolean("VIBE_FOR_DISCORD_ORB")
-        DISCORD_ORB_VIBE_INTENSITY = config["OverStim"].getfloat("DISCORD_ORB_VIBE_INTENSITY")
+        BEING_BEAMED_VIBE_INTENSITY = config["OverStim"].getfloat("BEING_BEAMED_VIBE_INTENSITY")
+        BEING_ORBED_VIBE_INTENSITY = config["OverStim"].getfloat("BEING_ORBED_VIBE_INTENSITY")
+
+        # Mercy-specific constants
+        MERCY_VIBE_FOR_RESURRECT = config["OverStim"].getboolean("MERCY_VIBE_FOR_RESURRECT")
+        MERCY_RESURRECT_VIBE_INTENSITY = config["OverStim"].getfloat("MERCY_RESURRECT_VIBE_INTENSITY")
+        MERCY_RESURRECT_VIBE_DURATION = config["OverStim"].getfloat("MERCY_RESURRECT_VIBE_DURATION")
+        MERCY_VIBE_FOR_BEAM = config["OverStim"].getboolean("MERCY_VIBE_FOR_BEAM")
+        MERCY_HEAL_BEAM_VIBE_INTENSITY = config["OverStim"].getfloat("MERCY_HEAL_BEAM_VIBE_INTENSITY")
+        MERCY_DAMAGE_BEAM_VIBE_INTENSITY = config["OverStim"].getfloat("MERCY_DAMAGE_BEAM_VIBE_INTENSITY")
+
+        # Zen-specific constants
+        ZEN_VIBE_FOR_HARMONY_ORB = config["OverStim"].getboolean("ZEN_VIBE_FOR_HARMONY_ORB")
+        ZEN_HARMONY_ORB_VIBE_INTENSITY = config["OverStim"].getfloat("ZEN_HARMONY_ORB_VIBE_INTENSITY")
+        ZEN_VIBE_FOR_DISCORD_ORB = config["OverStim"].getboolean("ZEN_VIBE_FOR_DISCORD_ORB")
+        ZEN_DISCORD_ORB_VIBE_INTENSITY = config["OverStim"].getfloat("ZEN_DISCORD_ORB_VIBE_INTENSITY")
+
+        # Other constants
         MAX_REFRESH_RATE = config["OverStim"].getint("MAX_REFRESH_RATE")
         DEAD_REFRESH_RATE = config["OverStim"].getfloat("DEAD_REFRESH_RATE")
         MERCY_BEAM_DISCONNECT_BUFFER = config["OverStim"].getint("MERCY_BEAM_DISCONNECT_BUFFER")
@@ -185,10 +203,10 @@ async def run_overstim():
     being_beamed_vibe_active = False
     being_orbed_vibe_active = False
     hacked_effect_active = False
-    heal_beam_vibe_active = False
-    damage_beam_vibe_active = False
-    harmony_orb_vibe_active = False
-    discord_orb_vibe_active = False
+    mercy_heal_beam_active = False
+    mercy_damage_beam_active = False
+    zen_harmony_orb_vibe_active = False
+    zen_discord_orb_vibe_active = False
     last_refresh = 0
     device_count = 0
 
@@ -226,7 +244,7 @@ async def run_overstim():
             window.close()
             print("Window closed.")
             break
-        
+
         elif event == "-HERO_SELECTOR-":
             hero_selected = values["-HERO_SELECTOR-"]
             player.switch_hero(hero_selected)
@@ -244,7 +262,7 @@ async def run_overstim():
             print("Running...")
 
             player.start_tracking(MAX_REFRESH_RATE)
-            
+
             counter = 0
             start_time = time.time()
 
@@ -259,7 +277,7 @@ async def run_overstim():
                 current_time = time.time()
 
                 counter += 1
-                if (not player.is_dead) or (player.is_dead and current_time >= last_refresh + (1/float(DEAD_REFRESH_RATE))):
+                if (not player.is_dead) or (player.is_dead and current_time >= last_refresh + (1 / float(DEAD_REFRESH_RATE))):
                     last_refresh = current_time
                     player.refresh()
 
@@ -271,10 +289,10 @@ async def run_overstim():
                         if VIBE_FOR_ASSIST:
                             if player.new_assists > 0:
                                 await alter_intensity_for_duration("assist", player.new_assists * ASSIST_VIBE_INTENSITY, ASSIST_VIBE_DURATION)
-                        
+
                         if VIBE_FOR_SAVE:
                             if player.new_saves > 0:
-                                if not player.resurrecting:
+                                if not player.mercy_resurrecting:
                                     await alter_intensity_for_duration("save", player.new_saves * SAVE_VIBE_INTENSITY, SAVE_VIBE_DURATION)
 
                         if VIBE_FOR_BEING_BEAMED:
@@ -320,59 +338,59 @@ async def run_overstim():
                                 for key in timed_vibes:
                                     timed_vibes[key].clear()
                                 await alter_intensity(0.5, "hacked")
-                                timed_vibes["hacked"].append({"Amount":0.25, "Frequency":0.2, "Last Change":0})
+                                timed_vibes["hacked"].append({"Amount": 0.25, "Frequency": 0.2, "Last Change": 0})
                                 hacked_effect_active = True
 
                     # Mercy
-                    if VIBE_FOR_RESURRECT:
-                        #TODO: Should consider allowing multiple active vibes for resurrect. What if people use a long duration and a lower intensity?
-                        if player.resurrecting and len(timed_vibes["resurrect"]) == 0:
-                            await alter_intensity_for_duration("resurrect", RESURRECT_VIBE_INTENSITY, RESURRECT_VIBE_DURATION)
-                    if VIBE_FOR_MERCY_BEAM:
-                        if player.heal_beam:
-                            if not heal_beam_vibe_active:
-                                if damage_beam_vibe_active:
-                                    await alter_intensity(HEAL_BEAM_VIBE_INTENSITY-DAMAGE_BEAM_VIBE_INTENSITY, "heal beaming")
-                                    heal_beam_vibe_active = True
-                                    damage_beam_vibe_active = False
+                    if MERCY_VIBE_FOR_RESURRECT:
+                        # TODO: Should consider allowing multiple active vibes for resurrect. What if people use a long duration and a lower intensity?
+                        if player.mercy_resurrecting and len(timed_vibes["resurrect"]) == 0:
+                            await alter_intensity_for_duration("resurrect", MERCY_RESURRECT_VIBE_INTENSITY, MERCY_RESURRECT_VIBE_DURATION)
+                    if MERCY_VIBE_FOR_BEAM:
+                        if player.mercy_heal_beam:
+                            if not mercy_heal_beam_active:
+                                if mercy_damage_beam_active:
+                                    await alter_intensity(MERCY_HEAL_BEAM_VIBE_INTENSITY - MERCY_DAMAGE_BEAM_VIBE_INTENSITY, "mercy heal beam on")
+                                    mercy_heal_beam_active = True
+                                    mercy_damage_beam_active = False
                                 else:
-                                    await alter_intensity(HEAL_BEAM_VIBE_INTENSITY, "heal beaming")
-                                    heal_beam_vibe_active = True
-                        elif player.damage_beam:
-                            if not damage_beam_vibe_active:
-                                if heal_beam_vibe_active:
-                                    await alter_intensity(DAMAGE_BEAM_VIBE_INTENSITY-HEAL_BEAM_VIBE_INTENSITY, "damage beaming")
-                                    damage_beam_vibe_active = True
-                                    heal_beam_vibe_active = False
+                                    await alter_intensity(MERCY_HEAL_BEAM_VIBE_INTENSITY, "")
+                                    mercy_heal_beam_active = True
+                        elif player.mercy_damage_beam:
+                            if not mercy_damage_beam_active:
+                                if mercy_heal_beam_active:
+                                    await alter_intensity(MERCY_DAMAGE_BEAM_VIBE_INTENSITY - MERCY_HEAL_BEAM_VIBE_INTENSITY, "mercy damage beam on")
+                                    mercy_damage_beam_active = True
+                                    mercy_heal_beam_active = False
                                 else:
-                                    await alter_intensity(DAMAGE_BEAM_VIBE_INTENSITY, "damage beaming")
-                                    damage_beam_vibe_active = True
-                        elif heal_beam_vibe_active:
-                            await alter_intensity(-HEAL_BEAM_VIBE_INTENSITY, "stopped heal beaming")
-                            heal_beam_vibe_active = False
-                        elif damage_beam_vibe_active:
-                            await alter_intensity(-DAMAGE_BEAM_VIBE_INTENSITY, "stopped damage beaming")
-                            damage_beam_vibe_active = False
-                    #Zenyatta
-                    if VIBE_FOR_HARMONY_ORB:
-                        #TODO: Turn some of these ifs inside out
-                        if harmony_orb_vibe_active:
-                            if not player.harmony_orb:
-                                await alter_intensity(-HARMONY_ORB_VIBE_INTENSITY, "stopped harmony orb")
-                                harmony_orb_vibe_active = False
+                                    await alter_intensity(MERCY_DAMAGE_BEAM_VIBE_INTENSITY, "mercy damage beam on")
+                                    mercy_damage_beam_active = True
+                        elif mercy_heal_beam_active:
+                            await alter_intensity(-MERCY_HEAL_BEAM_VIBE_INTENSITY, "mercy heal beam off")
+                            mercy_heal_beam_active = False
+                        elif mercy_damage_beam_active:
+                            await alter_intensity(-MERCY_DAMAGE_BEAM_VIBE_INTENSITY, "mercy damage beam off")
+                            mercy_damage_beam_active = False
+                    # Zenyatta
+                    if ZEN_VIBE_FOR_HARMONY_ORB:
+                        # TODO: Turn some of these ifs inside out
+                        if zen_harmony_orb_vibe_active:
+                            if not player.zen_harmony_orb:
+                                await alter_intensity(-ZEN_HARMONY_ORB_VIBE_INTENSITY, "zen harmony orb off")
+                                zen_harmony_orb_vibe_active = False
                         else:
-                            if player.harmony_orb:
-                                await alter_intensity(HARMONY_ORB_VIBE_INTENSITY, "harmony orb")
-                                harmony_orb_vibe_active = True
-                    if VIBE_FOR_DISCORD_ORB:
-                        if discord_orb_vibe_active:
-                            if not player.discord_orb:
-                                await alter_intensity(-DISCORD_ORB_VIBE_INTENSITY, "stopped discord orb")
-                                discord_orb_vibe_active = False
+                            if player.zen_harmony_orb:
+                                await alter_intensity(ZEN_HARMONY_ORB_VIBE_INTENSITY, "zen harmony orb")
+                                zen_harmony_orb_vibe_active = True
+                    if ZEN_VIBE_FOR_DISCORD_ORB:
+                        if zen_discord_orb_vibe_active:
+                            if not player.zen_discord_orb:
+                                await alter_intensity(-ZEN_DISCORD_ORB_VIBE_INTENSITY, "zen discord orb off")
+                                zen_discord_orb_vibe_active = False
                         else:
-                            if player.discord_orb:
-                                await alter_intensity(DISCORD_ORB_VIBE_INTENSITY, "discord orb")
-                                discord_orb_vibe_active = True
+                            if player.zen_discord_orb:
+                                await alter_intensity(ZEN_DISCORD_ORB_VIBE_INTENSITY, "zen discord orb")
+                                zen_discord_orb_vibe_active = True
 
                     if player.hero_auto_detect and player.detected_hero != player.hero:
                         print(f"Hero switch detected: {player.detected_hero}")
@@ -403,16 +421,17 @@ async def run_overstim():
             if event == sg.WIN_CLOSED or event == "Quit":
                 print("Window closed.")
                 break
-            
+
             duration = time.time() - start_time
-            print(f"Loops: {counter} | Loops per second: {round(counter/duration, 2)} | Avg. time: {round(1000 * (duration/counter), 2)}ms")
+            print(f"Loops: {counter} | Loops per second: {round(counter / duration, 2)} | Avg. time: {round(1000 * (duration / counter), 2)}ms")
             window.refresh()
-            
+
             player.stop_tracking()
-            
+
             window["-PROGRAM_STATUS-"].update("READY")
             window["Quit"].update(disabled=False)
             window["Start"].update(disabled=False)
+
 
 async def main():
     # Define global variables
@@ -420,8 +439,8 @@ async def main():
 
     # Define constants
     OUTPUT_WINDOW_ENABLED = True
-    HEROES = ["Other", "Mercy", "Zenyatta"]
-    #HEROES = ["D.Va", "Doomfist", "Junker Queen", "Orisa", "Rammatra", "Reinhardt", "Roadhog", "Sigma", "Winston", "Wrecking Ball", "Zarya", "Ashe", "Bastion", "Cassidy", "Echo", "Genji", "Hanzo", "Junkrat", "Mei", "Pharah", "Reaper", "Sojourn", "Soldier: 76", "Sombra", "Symmetra", "Torbjorn", "Tracer", "Widowmaker", "Ana", "Baptiste", "Brigitte", "Kiriko", "Lucio", "Mercy", "Moira", "Zenyatta"]
+    HEROES = ["Other", "Baptiste", "Brigitte", "Kiriko", "Lucio", "Mercy", "Zenyatta"]
+    # HEROES = ["D.Va", "Doomfist", "Junker Queen", "Orisa", "Rammatra", "Reinhardt", "Roadhog", "Sigma", "Winston", "Wrecking Ball", "Zarya", "Ashe", "Bastion", "Cassidy", "Echo", "Genji", "Hanzo", "Junkrat", "Mei", "Pharah", "Reaper", "Sojourn", "Soldier: 76", "Sombra", "Symmetra", "Torbjorn", "Tracer", "Widowmaker", "Ana", "Baptiste", "Brigitte", "Kiriko", "Lucio", "Mercy", "Moira", "Zenyatta"]
     try:
         OUTPUT_WINDOW_ENABLED = config["OverStim"].getboolean("OUTPUT_WINDOW_ENABLED")
         CONTINUOUS_SCANNING = config["OverStim"].getboolean("CONTINUOUS_SCANNING")
@@ -430,20 +449,20 @@ async def main():
     except Exception as err:
         config_fault[0] = True
         config_fault[1] = err
-    
+
     # Initialize variables
     scanning = False
     layout = [
         [sg.Text("Playing hero:"), sg.Combo(HEROES, readonly=True, disabled=True, enable_events=True, key="-HERO_SELECTOR-"), sg.Checkbox("Auto-detect", default=True, enable_events=True, key="-HERO_AUTO_DETECT-")],
-        [sg.Text("Devices connected:"), sg.Text("0", size=(4,1), key="-DEVICE_COUNT-")],
-        [sg.Text("Current intensity:"), sg.Text("0%", size=(17,1), key="-CURRENT_INTENSITY-")],
-        [sg.Text("Program status:"), sg.Text("READY", size=(15,1), key="-PROGRAM_STATUS-")],
+        [sg.Text("Devices connected:"), sg.Text("0", size=(4, 1), key="-DEVICE_COUNT-")],
+        [sg.Text("Current intensity:"), sg.Text("0%", size=(17, 1), key="-CURRENT_INTENSITY-")],
+        [sg.Text("Program status:"), sg.Text("READY", size=(15, 1), key="-PROGRAM_STATUS-")],
         [sg.Button("Start"), sg.Button("Stop", disabled=True), sg.Button("Quit")],
-        ]
+    ]
 
     # Set up GUI
     if OUTPUT_WINDOW_ENABLED:
-        layout.insert(0, [sg.Multiline(size=(60,15), disabled=True, reroute_stdout=True, autoscroll=True)])
+        layout.insert(0, [sg.Multiline(size=(60, 15), disabled=True, reroute_stdout=True, autoscroll=True)])
     window = sg.Window("OverStim", layout, finalize=True)
     window["-HERO_SELECTOR-"].update("Other")
     print("Ensure you read READ_BEFORE_USING.txt before using this program.")
@@ -456,7 +475,7 @@ async def main():
             try:
                 await client.connect(connector)
                 print("Connected to Intiface")
-            #except DisconnectedError:
+            # except DisconnectedError:
             #    window["-PROGRAM_STATUS-"].update("RECONNECTING")
             #    await client.reconnect()
             except Exception as ex:
@@ -506,9 +525,10 @@ async def main():
     window.close()
     print("Quitting.")
 
-#Start
 
-#Only allow one instance of OverStim to be running
+# Start
+
+# Only allow one instance of OverStim to be running
 kill_other_overstim_instances()
 
 # Import config
@@ -529,13 +549,13 @@ except Exception as err:
 # Define global variables
 window = None
 current_intensity = 0
-timed_vibes = {key:[] for key in [
+timed_vibes = {key: [] for key in [
     "elim",
     "assist",
     "save",
     "resurrect",
     "hacked",
-    ]}
+]}
 
 client = Client("OverStim", ProtocolSpec.v3)
 

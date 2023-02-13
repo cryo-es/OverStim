@@ -5,22 +5,27 @@ import cv2 as cv
 import dxcam
 
 
+# This is necessary to access files when it's compiled into an executable
 def resource_path(relative_path):
     return os.path.join(os.path.abspath("."), relative_path)
 
+
 class ComputerVision:
     def __init__(self, coords, mask_names, print_detected_resolution=True):
-        self.base_resolution = {"width":1920, "height":1080}
+        self.base_resolution = {"width": 1920, "height": 1080}
         self.screen = dxcam.create(max_buffer_len=1)
+
+        # Detect the user's screen resolution
         detected_resolution = self.screen.grab().shape[:2]
-        self.final_resolution = {"width":detected_resolution[1], "height":detected_resolution[0]}
+        self.final_resolution = {"width": detected_resolution[1], "height": detected_resolution[0]}
         if print_detected_resolution:
             print("Detected resolution as {0}x{1}.".format(self.final_resolution["width"], self.final_resolution["height"]))
+
         self.screenshot_region = (0, 0, self.final_resolution["width"], self.final_resolution["height"])
         self.coords = coords
-        self.templates = {key:cv.cvtColor(cv.imread(resource_path(f"data\\t_{key}.png")), cv.COLOR_RGB2GRAY) for key in self.coords}
+        self.templates = {key: cv.cvtColor(cv.imread(resource_path(f"data\\t_{key}.png")), cv.COLOR_RGB2GRAY) for key in self.coords}
         self.mask_names = mask_names
-        self.masks = {key:cv.cvtColor(cv.imread(resource_path(f"data\\m_{key}.png")), cv.COLOR_RGB2GRAY) for key in self.mask_names}
+        self.masks = {key: cv.cvtColor(cv.imread(resource_path(f"data\\m_{key}.png")), cv.COLOR_RGB2GRAY) for key in self.mask_names}
         self.frame = []
 
     def start_capturing(self, target_fps=60):
@@ -51,5 +56,4 @@ class ComputerVision:
 
     def detect_single(self, template_name, threshold=0.9):
         result = self.match(template_name)
-        #TODO: Use np.nanmax(result) here instead?
-        return result.max() > threshold
+        return np.nanmax(result) > threshold
