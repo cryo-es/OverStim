@@ -121,33 +121,39 @@ class OverwatchStateTracker:
                 self.being_beamed = False
                 self.being_orbed = False
                 self.hacked = False
+                # Add a way to remove this duplication of code (repeats in switch_hero).
+                # Probably, each hero should be a class and should have a method to zero its attributes. Instances could saved as self.mercy, self.zenyatta, etc.
                 if self.hero == "Mercy":
                     self.mercy_heal_beam = False
                     self.mercy_damage_beam = False
                     self.mercy_resurrecting = False
+                    self.mercy_heal_beam_buffer = 0
+                    self.mercy_damage_beam_buffer = 0
+                elif self.hero == "Zenyatta":
+                    self.zen_harmony_orb = False
+                    self.zen_discord_orb = False
+                    self.zen_harmony_orb_buffer = 0
+                    self.zen_discord_orb_buffer = 0
 
     def detect_hero(self):
-        # Wow, I should do better, but I'm lazy rn so that's for future me to refactor
-        if self.owcv.detect_single("baptiste_weapon", threshold=0.97):
-            self.detected_hero = "Baptiste"
-            self.detected_hero_time = self.current_time
-        elif self.owcv.detect_single("brigitte_weapon", threshold=0.97):
-            self.detected_hero = "Brigitte"
-            self.detected_hero_time = self.current_time
-        elif self.owcv.detect_single("kiriko_weapon", threshold=0.97):
-            self.detected_hero = "Kiriko"
-            self.detected_hero_time = self.current_time
-        elif self.owcv.detect_single("lucio_weapon", threshold=0.97):
-            self.detected_hero = "Lucio"
-            self.detected_hero_time = self.current_time
-        elif self.owcv.detect_single("zen_weapon", threshold=0.97):
-            self.detected_hero = "Zenyatta"
-            self.detected_hero_time = self.current_time
-        elif self.owcv.detect_single("mercy_staff", threshold=0.97) or self.owcv.detect_single("mercy_pistol", threshold=0.97):
-            self.detected_hero = "Mercy"
-            self.detected_hero_time = self.current_time
+        hero_detected = False
+        heroes = {
+            "zen_weapon": "Zenyatta",
+            "mercy_staff": "Mercy",
+            "mercy_pistol": "Mercy",
+            "baptiste_weapon": "Baptiste",
+            "brigitte_weapon": "Brigitte",
+            "kiriko_weapon": "Kiriko",
+            "lucio_weapon": "Lucio",
+        }
+        for hero_weapon, hero_name in heroes.items():
+            if self.owcv.detect_single(hero_weapon, threshold=0.97):
+                self.detected_hero = hero_name
+                self.detected_hero_time = self.current_time
+                hero_detected = True
+                break
         # If no supported hero has been detected within the last 8 seconds:
-        elif self.detected_hero != "Other" and self.current_time > self.detected_hero_time + 8:
+        if not hero_detected and self.detected_hero != "Other" and self.current_time > self.detected_hero_time + 8:
             self.detected_hero = "Other"
 
     def switch_hero(self, hero_name):
@@ -165,23 +171,18 @@ class OverwatchStateTracker:
         self.hero = hero_name
 
     def detect_new_notifs(self, notif_type):
-        new_notifs = 0
-        if self.total_new_notifs < 3:
-            notifs_detected = self.owcv.detect_multiple(notif_type)
-            existing_notifs = self.count_notifs_of_type(notif_type)
-            if notifs_detected > existing_notifs:
-                new_notifs = notifs_detected - existing_notifs
-                for i in range(new_notifs):
-                    self.add_notif(notif_type)
-            self.total_new_notifs += new_notifs
+        if self.total_new_notifs >= 3:
+            return 0
+        notifs_detected = self.owcv.detect_multiple(notif_type)
+        existing_notifs = self.count_notifs_of_type(notif_type)
+        new_notifs = max(0, notifs_detected - existing_notifs)
+        for _ in range(new_notifs):
+            self.add_notif(notif_type)
+        self.total_new_notifs += new_notifs
         return new_notifs
 
     def count_notifs_of_type(self, notif_type):
-        notif_count = 0
-        for notif in self.notifs:
-            if notif[0] == notif_type:
-                notif_count += 1
-        return notif_count
+        return sum(notif[0] == notif_type for notif in self.notifs)
 
     def get_expired_items(self, array, expiry_index):
         expired_items = []
@@ -204,48 +205,40 @@ class OverwatchStateTracker:
     def detect_mercy_beams(self):
         if self.owcv.detect_single("mercy_heal_beam"):
             self.mercy_heal_beam_buffer = 0
-            if not self.mercy_heal_beam:
-                self.mercy_heal_beam = True
-                self.mercy_damage_beam = False
-                self.mercy_damage_beam_buffer = 0
-        else:
-            if self.mercy_heal_beam:
-                self.mercy_heal_beam_buffer -= 1
-                if self.mercy_heal_beam_buffer == -self.mercy_beam_disconnect_buffer_size:
-                    self.mercy_heal_beam = False
+            self.mercy_heal_beam = True
+            self.mercy_damage_beam = False
+            self.mercy_damage_beam_buffer = 0
+        elif self.mercy_heal_beam:
+            self.mercy_heal_beam_buffer += 1
+            if self.mercy_heal_beam_buffer == self.mercy_beam_disconnect_buffer_size:
+                self.mercy_heal_beam = False
 
         if self.owcv.detect_single("mercy_damage_beam"):
             self.mercy_damage_beam_buffer = 0
-            if not self.mercy_damage_beam:
-                self.mercy_damage_beam = True
-                self.mercy_heal_beam = False
-                self.mercy_heal_beam_buffer = 0
-        else:
-            if self.mercy_damage_beam:
-                self.mercy_damage_beam_buffer -= 1
-                if self.mercy_damage_beam_buffer == -self.mercy_beam_disconnect_buffer_size:
-                    self.mercy_damage_beam = False
+            self.mercy_damage_beam = True
+            self.mercy_heal_beam = False
+            self.mercy_heal_beam_buffer = 0
+        elif self.mercy_damage_beam:
+            self.mercy_damage_beam_buffer += 1
+            if self.mercy_damage_beam_buffer == self.mercy_beam_disconnect_buffer_size:
+                self.mercy_damage_beam = False
 
     def detect_zen_orbs(self):
         if self.owcv.detect_single("zen_harmony"):
             self.zen_harmony_orb_buffer = 0
-            if not self.zen_harmony_orb:
-                self.zen_harmony_orb = True
-        else:
-            if self.zen_harmony_orb:
-                self.zen_harmony_orb_buffer -= 1
-                if self.zen_harmony_orb_buffer == -self.zen_orb_disconnect_buffer_size:
-                    self.zen_harmony_orb = False
+            self.zen_harmony_orb = True
+        elif self.zen_harmony_orb:
+            self.zen_harmony_orb_buffer += 1
+            if self.zen_harmony_orb_buffer == self.zen_orb_disconnect_buffer_size:
+                self.zen_harmony_orb = False
 
         if self.owcv.detect_single("zen_discord"):
             self.zen_discord_orb_buffer = 0
-            if not self.zen_discord_orb:
-                self.zen_discord_orb = True
-        else:
-            if self.zen_discord_orb:
-                self.zen_discord_orb_buffer -= 1
-                if self.zen_discord_orb_buffer == -self.zen_orb_disconnect_buffer_size:
-                    self.zen_discord_orb = False
+            self.zen_discord_orb = True
+        elif self.zen_discord_orb:
+            self.zen_discord_orb_buffer += 1
+            if self.zen_discord_orb_buffer == self.zen_orb_disconnect_buffer_size:
+                self.zen_discord_orb = False
 
     def start_tracking(self, refresh_rate):
         self.owcv.start_capturing(refresh_rate)
