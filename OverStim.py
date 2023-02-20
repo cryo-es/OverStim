@@ -30,7 +30,7 @@ def kill_other_overstim_instances():
 
 
 def update_device_count(last_device_count):
-    current_device_count = len(client.devices)
+    current_device_count = vibe_manager.get_device_count()
     if current_device_count != last_device_count:
         window["-DEVICE_COUNT-"].update(current_device_count)
         return current_device_count
@@ -158,6 +158,9 @@ class VibeManager:
 
     def _get_devices(self):
         return [device for device in client.devices.values() if device.name not in EXCLUDED_DEVICE_NAMES]
+
+    def get_device_count(self):
+        return len(self._get_devices())
 
     async def stop_all_devices(self):
         self.clear_vibes()
