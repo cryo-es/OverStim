@@ -29,13 +29,6 @@ def kill_other_overstim_instances():
                 p.terminate()
 
 
-def update_device_count(last_device_count):
-    current_device_count = vibe_manager.get_device_count()
-    if current_device_count != last_device_count:
-        window["-DEVICE_COUNT-"].update(current_device_count)
-        return current_device_count
-
-
 def clamp_value(value, max_value, min_value=0, value_name="value"):
     if value > max_value:
         value = max_value
@@ -48,6 +41,17 @@ def clamp_value(value, max_value, min_value=0, value_name="value"):
 def round_value_to_nearest_step(value, step):
     digits_to_round_to = len(str(float(step)).split(".")[1])
     return round(step * round(value / step, 0), digits_to_round_to)
+
+
+def get_devices():
+    return [device for device in client.devices.values() if device.name not in EXCLUDED_DEVICE_NAMES]
+
+
+def update_device_count(last_device_count):
+    current_device_count = len(get_devices())
+    if current_device_count != last_device_count:
+        window["-DEVICE_COUNT-"].update(current_device_count)
+        return current_device_count
 
 
 class Vibe:
@@ -156,15 +160,9 @@ class VibeManager:
             for trigger in triggers:
                 del self.vibes[trigger]
 
-    def _get_devices(self):
-        return [device for device in client.devices.values() if device.name not in EXCLUDED_DEVICE_NAMES]
-
-    def get_device_count(self):
-        return len(self._get_devices())
-
     async def stop_all_devices(self):
         self.clear_vibes()
-        for device in self._get_devices():
+        for device in get_devices():
             await device.stop()
 
     def _get_vibes(self, triggers=None):
@@ -250,7 +248,7 @@ class VibeManager:
             if self.real_intensity != latest_clamped_intensity:
                 self.real_intensity = latest_clamped_intensity
                 self.print_active_triggers()
-                await self._update_intensity_for_devices(self._get_devices())
+                await self._update_intensity_for_devices(get_devices())
 
                 window["-CURRENT_INTENSITY-"].update(str(int(self.current_intensity * 100)) + ("%" if self.current_intensity == self.real_intensity else f"% (max {int(MAX_VIBE_INTENSITY * 100)}%)"))
                 if BEEP_ENABLED:
