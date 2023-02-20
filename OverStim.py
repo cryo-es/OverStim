@@ -114,45 +114,45 @@ class VibeManager:
     def _add_vibe(self, vibe):
         self.vibes.setdefault(vibe.trigger, []).append(vibe)
 
-    def add_permanent_vibe(self, amount, event_type):
+    def add_permanent_vibe(self, amount, trigger):
         # The 60 here is arbitrary, as the pattern only has one intensity
-        self._add_vibe(PermanentVibe([[amount, 60]], event_type, self.current_time))
+        self._add_vibe(PermanentVibe([[amount, 60]], trigger, self.current_time))
 
-    def add_timed_vibe(self, amount, event_type, duration):
-        self._add_vibe(TimedVibe([[amount, duration]], event_type, duration, self.current_time))
+    def add_timed_vibe(self, amount, trigger, duration):
+        self._add_vibe(TimedVibe([[amount, duration]], trigger, duration, self.current_time))
 
-    def add_permanent_pattern(self, pattern, event_type):
-        self._add_vibe(PermanentVibe(pattern, event_type, self.current_time))
+    def add_permanent_pattern(self, pattern, trigger):
+        self._add_vibe(PermanentVibe(pattern, trigger, self.current_time))
 
-    def add_timed_pattern(self, pattern, event_type, duration):
-        self._add_vibe(TimedVibe(pattern, event_type, duration, self.current_time))
+    def add_timed_pattern(self, pattern, trigger, duration):
+        self._add_vibe(TimedVibe(pattern, trigger, duration, self.current_time))
 
-    def add_looped_pattern(self, pattern, event_type, loop_count):
-        self._add_vibe(LoopedVibe(pattern, event_type, loop_count, self.current_time))
+    def add_looped_pattern(self, pattern, trigger, loop_count):
+        self._add_vibe(LoopedVibe(pattern, trigger, loop_count, self.current_time))
 
     def _remove_vibe(self, vibe):
         self.vibes[vibe.trigger].remove(vibe)
         if not self.vibes[vibe.trigger]:
             del self.vibes[vibe.trigger]
 
-    def remove_vibe_by_trigger(self, event_type, index=0):
+    def remove_vibe_by_trigger(self, trigger, index=0):
         # Index of 0 removes the oldest vibe, index of -1 removes the newest vibe.
-        if self.vibe_exists_for_trigger(event_type):
-            vibe = self._get_vibes([event_type])[index]
+        if self.vibe_exists_for_trigger(trigger):
+            vibe = self._get_vibes([trigger])[index]
             self._remove_vibe(vibe)
 
-    def remove_pattern_by_trigger(self, event_type, index=0):
-        self.remove_vibe_by_trigger(event_type=event_type, index=index)
+    def remove_pattern_by_trigger(self, trigger, index=0):
+        self.remove_vibe_by_trigger(trigger=trigger, index=index)
 
-    def toggle_vibe_to_condition(self, trigger_name, intensity, condition):
-        vibe_exists_of_type = self.vibe_exists_for_trigger(trigger_name)
-        if condition and not vibe_exists_of_type:
-            self.add_permanent_vibe(intensity, trigger_name)
-        elif not condition and vibe_exists_of_type:
-            self.remove_vibe_by_trigger(trigger_name)
+    def toggle_vibe_to_condition(self, trigger, intensity, condition):
+        vibe_exists_for_trigger = self.vibe_exists_for_trigger(trigger)
+        if condition and not vibe_exists_for_trigger:
+            self.add_permanent_vibe(intensity, trigger)
+        elif not condition and vibe_exists_for_trigger:
+            self.remove_vibe_by_trigger(trigger)
 
-    def toggle_pattern_to_condition(self, trigger_name, intensity, condition):
-        self.toggle_vibe_to_condition(trigger_name, intensity, condition)
+    def toggle_pattern_to_condition(self, trigger, intensity, condition):
+        self.toggle_vibe_to_condition(trigger, intensity, condition)
 
     def clear_vibes(self, triggers=None):
         if triggers is None:
@@ -174,22 +174,25 @@ class VibeManager:
             list_of_vibes.extend(self.vibes.get(trigger, []))
         return list_of_vibes
 
-    def vibe_exists_for_trigger(self, event_type):
-        if self._get_vibes([event_type]):
+    def vibe_exists_for_trigger(self, trigger):
+        if self._get_vibes([trigger]):
             return True
         return False
 
-    def vibe_of_type_created_within_seconds(self, event_type, seconds):
-        return len([vibe.creation_time > self.current_time - seconds for vibe in self._get_vibes([event_type])]) > 0
+    def pattern_exists_for_trigger(self, trigger):
+        return self.vibe_exists_for_trigger(trigger)
 
-    def pattern_exists_of_type(self, event_type):
-        return self.vibe_exists_for_trigger(event_type)
+    def vibe_for_trigger_created_within_seconds(self, trigger, seconds):
+        return len([vibe.creation_time > self.current_time - seconds for vibe in self._get_vibes([trigger])]) > 0
 
-    def count_of_vibes_by_type(self, event_type):
-        return len(self._get_vibes([event_type]))
+    def pattern_for_trigger_created_within_seconds(self, trigger, seconds):
+        return self.vibe_for_trigger_created_within_seconds(trigger, seconds)
 
-    def count_of_patterns_by_type(self, event_type):
-        return self.count_of_vibes_by_type(event_type)
+    def count_vibes_for_trigger(self, trigger):
+        return len(self._get_vibes([trigger]))
+
+    def count_patterns_for_trigger(self, trigger):
+        return self.count_vibes_for_trigger(trigger)
 
     def _get_total_intensity(self, triggers=None):
         total_intensity = 0
@@ -415,7 +418,7 @@ async def run_overstim():
 
                         # Mercy
                         if MERCY_VIBE_FOR_RESURRECT:
-                            if player.mercy_resurrecting and not vibe_manager.vibe_of_type_created_within_seconds("mercy resurrect", 3):
+                            if player.mercy_resurrecting and not vibe_manager.vibe_for_trigger_created_within_seconds("mercy resurrect", 3):
                                 vibe_manager.add_timed_vibe(MERCY_RESURRECT_VIBE_INTENSITY, "mercy resurrect", MERCY_RESURRECT_VIBE_DURATION)
 
                         if MERCY_VIBE_FOR_HEAL_BEAM:
