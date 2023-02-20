@@ -122,7 +122,7 @@ class OverwatchStateTracker:
                 self.being_orbed = False
                 self.hacked = False
                 # Add a way to remove this duplication of code (repeats in switch_hero).
-                # Probably, each hero should be a class and should have a method to zero its attributes. Instances could saved as self.mercy, self.zenyatta, etc.
+                # Probably, each hero should be a class and should have a method to zero its attributes. Instances could saved as self.mercy, self.zenyatta, etc. Or just as self.current_hero.
                 if self.hero == "Mercy":
                     self.mercy_heal_beam = False
                     self.mercy_damage_beam = False

@@ -60,6 +60,7 @@ class Vibe:
         self.pattern = self._build_pattern(current_time)
         self.trigger = trigger
         self.current_index = 0
+        self.creation_time = current_time
 
         if total_duration:
             self.expiry = current_time + total_duration
@@ -178,14 +179,17 @@ class VibeManager:
             return True
         return False
 
+    def vibe_of_type_created_within_seconds(self, event_type, seconds):
+        return len([vibe.creation_time > self.current_time - seconds for vibe in self._get_vibes([event_type])]) > 0
+
     def pattern_exists_of_type(self, event_type):
         return self.vibe_exists_for_trigger(event_type)
 
-    def get_count_of_vibes_by_type(self, event_type):
+    def count_of_vibes_by_type(self, event_type):
         return len(self._get_vibes([event_type]))
 
-    def get_count_of_patterns_by_type(self, event_type):
-        return self.get_count_of_vibes_by_type(event_type)
+    def count_of_patterns_by_type(self, event_type):
+        return self.count_of_vibes_by_type(event_type)
 
     def _get_total_intensity(self, triggers=None):
         total_intensity = 0
