@@ -415,8 +415,7 @@ async def run_overstim():
 
                         # Mercy
                         if MERCY_VIBE_FOR_RESURRECT:
-                            # TODO: Should consider allowing multiple active vibes for resurrect. What if people use a duration longer than the cooldown?
-                            if player.mercy_resurrecting and not vibe_manager.vibe_exists_for_trigger("mercy resurrect"):
+                            if player.mercy_resurrecting and not vibe_manager.vibe_of_type_created_within_seconds("mercy resurrect", 3):
                                 vibe_manager.add_timed_vibe(MERCY_RESURRECT_VIBE_INTENSITY, "mercy resurrect", MERCY_RESURRECT_VIBE_DURATION)
 
                         if MERCY_VIBE_FOR_HEAL_BEAM:
