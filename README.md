@@ -24,6 +24,6 @@ Optional Settings (all disabled by default):
 
 Known Issues:
 - Some features don't work with colourblind settings enabled.
-- Probably doesn't work at aspect ratios other than 16:9.
+- Doesn't work at aspect ratios other than 16:9.
 - High latency to the game server causes Mercy's beam to reconnect to people slower when switching beam types. This can cause temporary gaps in vibration.
-- Only works on Windows (come join the Discord if you want Linux support, one guy managed to get it working).
+- Only Windows is officially supported ([join the Discord](https://discord.gg/AVpcVhQQhu) if you want Linux support, one guy managed to get it working).
