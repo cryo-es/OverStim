@@ -9,6 +9,7 @@ import os
 import re
 
 from buttplug import Client, WebsocketConnector, ProtocolSpec
+from pynput import keyboard
 import PySimpleGUI as sg
 import psutil as ps
 
@@ -52,6 +53,14 @@ def update_device_count(last_device_count):
     if current_device_count != last_device_count:
         window["-DEVICE_COUNT-"].update(current_device_count)
         return current_device_count
+
+
+def for_canonical(f):
+    return lambda k: f(emergency_stop_listener.canonical(k))
+
+
+def emergency_stop():
+    vibe_manager.stopped = True
 
 
 class Vibe:
@@ -106,13 +115,15 @@ class LoopedVibe(Vibe):
 
 class VibeManager:
     def __init__(self):
+        self.stopped = True
         self.current_time = 0
         self.vibes = {}
         self.current_intensity = 0
         self.real_intensity = 0
 
     def _add_vibe(self, vibe):
-        self.vibes.setdefault(vibe.trigger, []).append(vibe)
+        if not self.stopped:
+            self.vibes.setdefault(vibe.trigger, []).append(vibe)
 
     def add_permanent_vibe(self, amount, trigger):
         # The 60 here is arbitrary, as the pattern only has one intensity
@@ -162,9 +173,14 @@ class VibeManager:
                 del self.vibes[trigger]
 
     async def stop_all_devices(self):
+        self.stopped = True
         self.clear_vibes()
         for device in get_devices():
             await device.stop()
+        self.current_intensity = 0
+        self.real_intensity = 0
+        print("Stopped all devices.")
+        window["-CURRENT_INTENSITY-"].update("0%")
 
     def _get_vibes(self, triggers=None):
         if triggers is None:
@@ -228,7 +244,7 @@ class VibeManager:
                 print(intensity_string)
 
             except Exception as device_intensity_update_error:
-                print(f"Stopping {device.name} due to an error when altering its vibration.")
+                print(f"Stopping {device.name} due to an error while altering its vibration.")
                 print(device_intensity_update_error)
                 await device.stop()
 
@@ -243,6 +259,10 @@ class VibeManager:
             print(f"  {', '.join(active_triggers)}")
 
     async def update(self, current_time):
+        if self.stopped:
+            if self.current_intensity != 0:
+                await self.stop_all_devices()
+            return
         self.current_time = current_time
         latest_intensity = self._get_total_intensity()
         if SCALE_ALL_INTENSITIES_BY_MAX_INTENSITY:
@@ -363,6 +383,7 @@ async def run_overstim():
             window["Start"].update(disabled=True)
             window["-PROGRAM_STATUS-"].update("RUNNING")
             print("Running...")
+            vibe_manager.stopped = False
 
             player.start_tracking(MAX_REFRESH_RATE)
 
@@ -440,6 +461,9 @@ async def run_overstim():
                         player.switch_hero(player.detected_hero)
 
                 event, values = window.read(timeout=1)
+                if vibe_manager.stopped:
+                    print("Emergency stop detected.")
+                    event = "Stop"
                 if event == sg.WIN_CLOSED or event == "Quit":
                     window.close()
                     break
@@ -530,8 +554,9 @@ async def main():
     window["-HERO_SELECTOR-"].update("Other")
     print("Ensure you read READ_BEFORE_USING.txt before using this program.\n-")
 
-    # Connect to Intiface
     if not config_fault[0]:
+        emergency_stop_listener.start()
+        # Connect to Intiface
         if USING_INTIFACE:
             connector = WebsocketConnector(f"{WEBSOCKET_ADDRESS}:{WEBSOCKET_PORT}", logger=client.logger)
             try:
@@ -575,6 +600,11 @@ async def main():
             window["Quit"].update(disabled=True)
             window.close()
 
+    try:
+        emergency_stop_listener.stop()
+    except:
+        pass
+
     # Close program
     await vibe_manager.stop_all_devices()
     if not config_fault[0]:
@@ -604,6 +634,7 @@ try:
     MAX_VIBE_INTENSITY = clamp_value(config["OverStim"].getfloat("MAX_VIBE_INTENSITY"), 1, value_name="MAX_VIBE_INTENSITY")
     SCALE_ALL_INTENSITIES_BY_MAX_INTENSITY = config["OverStim"].getboolean("SCALE_ALL_INTENSITIES_BY_MAX_INTENSITY")
     EXCLUDED_DEVICE_NAMES = json.loads(config["OverStim"].get("EXCLUDED_DEVICE_NAMES"))
+    EMERGENCY_STOP_KEY_COMBO = keyboard.HotKey.parse(config["OverStim"]["EMERGENCY_STOP_KEY_COMBO"])
 except Exception as err:
     config_fault[0] = True
     config_fault[1] = err
@@ -612,6 +643,10 @@ except Exception as err:
 window = sg.Window("OverStim")
 client = Client("OverStim", ProtocolSpec.v3)
 vibe_manager = VibeManager()
+
+if not config_fault[0]:
+    hotkey = keyboard.HotKey(EMERGENCY_STOP_KEY_COMBO, emergency_stop)
+    emergency_stop_listener = keyboard.Listener(on_press=for_canonical(hotkey.press), on_release=for_canonical(hotkey.release))
 
 sg.theme("DarkAmber")
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)

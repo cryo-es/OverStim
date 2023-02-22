@@ -7,6 +7,9 @@ Thanks for helping test OverStim!
 
 Every time you launch OverStim, you must first launch Intiface Central and start the Intiface server by clicking the big blue play button. This must be done before opening OverStim.
 
+The emergency stop key combo is CTRL-SHIFT-WINDOWS. For most people, these are the three bottom left keys on their keyboard. If you panic, just smack that corner of your keyboard.
+PLEASE TEST THE EMERGENCY STOP TO MAKE SURE IT WORKS ON YOUR COMPUTER BEFORE RELYING ON IT.
+
 Before running OverStim for the first time, you should open the config file to see what's inside.
 OverStim is highly customizable. Some features come disabled by default, and all features can be tweaked as per your preferences.
 Settings you might want to change:
@@ -23,6 +26,6 @@ I'm currently trying to collect as many ideas as possible, so don't be shy! Our 
 
 Known Issues:
 - Some features don't work with colourblind settings enabled.
-- Probably doesn't work at aspect ratios other than 16:9.
+- Doesn't work at aspect ratios other than 16:9.
 - High latency to the game server causes Mercy's beam to reconnect to people slower when switching beam types. This can cause temporary gaps in vibration.
-- Only works on Windows (come join the Discord if you want Linux support, one guy managed to get it working).
+- Only Windows is officially supported (join the Discord if you want Linux support, one guy managed to get it working).
