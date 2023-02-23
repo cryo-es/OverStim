@@ -326,7 +326,7 @@ async def run_overstim():
         config_fault[1] = config_error
 
     # Initialize variables
-    if not config_fault[0]:
+    if not config_fault[0] and window["-PROGRAM_STATUS-"].get() != "INTIFACE ERROR":
         player = OverwatchStateTracker()
         player.mercy_beam_disconnect_buffer_size = MERCY_BEAM_DISCONNECT_BUFFER
         player.zen_orb_disconnect_buffer_size = ZEN_ORB_DISCONNECT_BUFFER
@@ -348,9 +348,10 @@ async def run_overstim():
                 break
 
         if USING_INTIFACE and not client.connected:
-            window["Start"].update(disabled=True)
-            window["-PROGRAM_STATUS-"].update("INTIFACE ERROR")
-            print("Lost connection to Intiface. Make sure Intiface Central is started and then restart OverStim.")
+            if window["-PROGRAM_STATUS-"].get() != "INTIFACE ERROR":
+                window["Start"].update(disabled=True)
+                window["-PROGRAM_STATUS-"].update("INTIFACE ERROR")
+                print("Lost connection to Intiface. Make sure Intiface Central is started and then restart OverStim.")
             event, values = window.read()
             if event == sg.WIN_CLOSED or event == "Quit":
                 window.close()
@@ -563,8 +564,8 @@ async def main():
             #    window["-PROGRAM_STATUS-"].update("RECONNECTING")
             #    await client.reconnect()
             except Exception as ex:
-                print(f"Could not connect to server: {ex}")
-                print("Make sure you've started the Intiface server and that the websocket address/port matches.")
+                print(ex)
+                print("Make sure you've started the Intiface server, then restart OverStim.")
                 window["-PROGRAM_STATUS-"].update("INTIFACE ERROR")
                 window["Start"].update(disabled=True)
 
@@ -599,7 +600,7 @@ async def main():
 
     try:
         emergency_stop_listener.stop()
-    except:
+    except Exception:
         pass
 
     # Close program
