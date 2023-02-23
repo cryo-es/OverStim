@@ -2,5 +2,6 @@ buttplug-py==0.2.0
 dxcam==0.0.5
 numpy==1.24.2
 psutil==5.9.4
+pynput==1.7.6
 PySimpleGUI==4.60.4
 opencv-python==4.7.0.68
