@@ -337,14 +337,10 @@ async def run_overstim():
         # Gives main time to respond to pings from Intiface
         await asyncio.sleep(0)
 
-        device_count = update_device_count(device_count)
-
         if config_fault[0]:
-            window["Stop"].update(disabled=True)
             window["Start"].update(disabled=True)
-            print(f"Error reading config: {config_fault[1]}")
             window["-PROGRAM_STATUS-"].update("CONFIG ERROR")
-
+            print(f"Error reading config: {config_fault[1]}")
             event, values = window.read()
             if event == sg.WIN_CLOSED or event == "Quit":
                 window.close()
@@ -352,15 +348,16 @@ async def run_overstim():
                 break
 
         if USING_INTIFACE and not client.connected:
-            window["-PROGRAM_STATUS-"].update("INTIFACE ERROR")
             window["Start"].update(disabled=True)
+            window["-PROGRAM_STATUS-"].update("INTIFACE ERROR")
             print("Lost connection to Intiface. Make sure Intiface Central is started and then restart OverStim.")
-
             event, values = window.read()
             if event == sg.WIN_CLOSED or event == "Quit":
                 window.close()
                 print("Window closed.")
                 break
+
+        device_count = update_device_count(device_count)
 
         event, values = window.read(timeout=10)
         if event == sg.WIN_CLOSED or event == "Quit":
@@ -394,14 +391,38 @@ async def run_overstim():
                 # Gives main time to respond to pings from Intiface
                 await asyncio.sleep(0)
 
-                device_count = update_device_count(device_count)
                 if USING_INTIFACE and not client.connected:
-                    break
+                    break  # TODO: Is this all that needs to be done?
 
+                counter += 1
+                device_count = update_device_count(device_count)
                 current_time = time.time()
                 await vibe_manager.update(current_time)
 
-                counter += 1
+                event, values = window.read(timeout=1)
+                if vibe_manager.stopped:
+                    print("Emergency stop detected.")
+                    event = "Stop"
+                if event == sg.WIN_CLOSED or event == "Quit":
+                    window.close()
+                    break
+                elif event == "Stop":
+                    await vibe_manager.stop_all_devices()
+                    window["-PROGRAM_STATUS-"].update("STOPPING")
+                    window["Stop"].update(disabled=True)
+                    window["Quit"].update(disabled=True)
+                    print("Stopped.")
+                    window.refresh()
+                    break
+                elif event == "-HERO_SELECTOR-":
+                    hero_selected = values["-HERO_SELECTOR-"]
+                    player.switch_hero(hero_selected)
+                    print(f"Hero switched to {hero_selected}.")
+                elif event == "-HERO_AUTO_DETECT-":
+                    checkbox_state = values["-HERO_AUTO_DETECT-"]
+                    player.hero_auto_detect = checkbox_state
+                    window["-HERO_SELECTOR-"].update(disabled=checkbox_state)
+
                 if (not player.is_dead) or (player.is_dead and current_time >= last_refresh + (1 / float(DEAD_REFRESH_RATE))):
                     last_refresh = current_time
                     player.refresh()
@@ -459,30 +480,6 @@ async def run_overstim():
                         print(f"Hero switch detected: {player.detected_hero}")
                         window["-HERO_SELECTOR-"].update(player.detected_hero)
                         player.switch_hero(player.detected_hero)
-
-                event, values = window.read(timeout=1)
-                if vibe_manager.stopped:
-                    print("Emergency stop detected.")
-                    event = "Stop"
-                if event == sg.WIN_CLOSED or event == "Quit":
-                    window.close()
-                    break
-                elif event == "Stop":
-                    await vibe_manager.stop_all_devices()
-                    window["-PROGRAM_STATUS-"].update("STOPPING")
-                    window["Stop"].update(disabled=True)
-                    window["Quit"].update(disabled=True)
-                    print("Stopped.")
-                    window.refresh()
-                    break
-                elif event == "-HERO_SELECTOR-":
-                    hero_selected = values["-HERO_SELECTOR-"]
-                    player.switch_hero(hero_selected)
-                    print(f"Hero switched to {hero_selected}.")
-                elif event == "-HERO_AUTO_DETECT-":
-                    checkbox_state = values["-HERO_AUTO_DETECT-"]
-                    player.hero_auto_detect = checkbox_state
-                    window["-HERO_SELECTOR-"].update(disabled=checkbox_state)
 
             if event == sg.WIN_CLOSED or event == "Quit":
                 print("Window closed.")
