@@ -505,9 +505,9 @@ async def main():
     OUTPUT_WINDOW_ENABLED = True
     HEROES = ["Other", "Baptiste", "Brigitte", "Kiriko", "Lucio", "Mercy", "Zenyatta"]
     # HEROES = [
-    #     "D.Va", "Doomfist", "Junker Queen", "Orisa", "Rammatra", "Reinhardt", "Roadhog", "Sigma", "Winston", "Wrecking Ball", "Zarya",
-    #     "Ashe", "Bastion", "Cassidy", "Echo", "Genji", "Hanzo", "Junkrat", "Mei", "Pharah", "Reaper", "Sojourn", "Soldier: 76", "Sombra", "Symmetra", "Torbjorn", "Tracer", "Widowmaker",
-    #     "Ana", "Baptiste", "Brigitte", "Kiriko", "Lucio", "Mercy", "Moira", "Zenyatta"
+    #         "DVa", "Doomfist", "JunkerQueen", "Orisa", "Rammatra", "Reinhardt", "Roadhog", "Sigma", "Winston", "WreckingBall", "Zarya",
+    #         "Ashe", "Bastion", "Cassidy", "Echo", "Genji", "Hanzo", "Junkrat", "Mei", "Pharah", "Reaper", "Sojourn", "Soldier76", "Sombra", "Symmetra", "Torbjorn", "Tracer", "Widowmaker",
+    #         "Ana", "Baptiste", "Brigitte", "Kiriko", "Lucio", "Mercy", "Moira", "Zenyatta"
     # ]
     try:
         OUTPUT_WINDOW_ENABLED = config["OverStim"].getboolean("OUTPUT_WINDOW_ENABLED")

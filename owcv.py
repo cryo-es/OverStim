@@ -35,19 +35,20 @@ class ComputerVision:
         self.screen.stop()
 
     def capture_frame(self):
+        screenshot = self.screen.get_latest_frame()
         if self.final_resolution != self.base_resolution:
-            self.frame = cv.cvtColor(cv.resize(self.screen.get_latest_frame(), (self.base_resolution["width"], self.base_resolution["height"])), cv.COLOR_BGR2GRAY)
-        else:
-            self.frame = cv.cvtColor(self.screen.get_latest_frame(), cv.COLOR_BGR2GRAY)
+            screenshot = cv.resize(screenshot, (self.base_resolution["width"], self.base_resolution["height"]))
+        self.frame = cv.cvtColor(screenshot, cv.COLOR_BGR2GRAY)
 
     def crop(self, image, template_name):
         return image[self.coords[template_name][0]:self.coords[template_name][1], self.coords[template_name][2]:self.coords[template_name][3]]
 
     def match(self, template_name):
+        cropped_frame = self.crop(self.frame, template_name)
         if template_name in self.mask_names:
-            return cv.matchTemplate(self.crop(self.frame, template_name), self.templates[template_name], cv.TM_CCOEFF_NORMED, mask=self.masks[template_name])
+            return cv.matchTemplate(cropped_frame, self.templates[template_name], cv.TM_CCOEFF_NORMED, mask=self.masks[template_name])
         else:
-            return cv.matchTemplate(self.crop(self.frame, template_name), self.templates[template_name], cv.TM_CCOEFF_NORMED)
+            return cv.matchTemplate(cropped_frame, self.templates[template_name], cv.TM_CCOEFF_NORMED)
 
     def detect_multiple(self, template_name, threshold=0.9):
         result = self.match(template_name)
