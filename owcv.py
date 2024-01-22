@@ -2,7 +2,7 @@ import os
 
 import numpy as np
 import cv2 as cv
-import dxcam
+import bettercam
 
 
 # This is necessary to access files when it's compiled into an executable
@@ -13,7 +13,7 @@ def resource_path(relative_path):
 class ComputerVision:
     def __init__(self, coords, mask_names, print_detected_resolution=True):
         self.base_resolution = {"width": 1920, "height": 1080}
-        self.screen = dxcam.create(max_buffer_len=1)
+        self.screen = bettercam.create(max_buffer_len=1)
 
         # Detect the user's screen resolution
         detected_resolution = self.screen.grab().shape[:2]
