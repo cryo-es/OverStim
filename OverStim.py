@@ -305,6 +305,12 @@ async def run_overstim():
         BEING_BEAMED_VIBE_INTENSITY = config["OverStim"].getfloat("BEING_BEAMED_VIBE_INTENSITY")
         BEING_ORBED_VIBE_INTENSITY = config["OverStim"].getfloat("BEING_ORBED_VIBE_INTENSITY")
 
+        # Lucio-specific constants
+        LUCIO_VIBE_FOR_HEALING_SONG = config["OverStim"].getboolean("LUCIO_VIBE_FOR_HEALING_SONG")
+        LUCIO_HEALING_SONG_PATTERN = json.loads(config["OverStim"].get("LUCIO_HEALING_SONG_PATTERN"))
+        LUCIO_VIBE_FOR_SPEED_SONG = config["OverStim"].getboolean("LUCIO_VIBE_FOR_SPEED_SONG")
+        LUCIO_SPEED_SONG_PATTERN = json.loads(config["OverStim"].get("LUCIO_SPEED_SONG_PATTERN"))
+
         # Mercy-specific constants
         MERCY_VIBE_FOR_RESURRECT = config["OverStim"].getboolean("MERCY_VIBE_FOR_RESURRECT")
         MERCY_RESURRECT_VIBE_INTENSITY = config["OverStim"].getfloat("MERCY_RESURRECT_VIBE_INTENSITY")
@@ -323,6 +329,7 @@ async def run_overstim():
         # Other constants
         MAX_REFRESH_RATE = config["OverStim"].getint("MAX_REFRESH_RATE")
         DEAD_REFRESH_RATE = config["OverStim"].getfloat("DEAD_REFRESH_RATE")
+        LUCIO_CROSSFADE_BUFFER = config["OverStim"].getint("LUCIO_CROSSFADE_BUFFER")
         MERCY_BEAM_DISCONNECT_BUFFER = config["OverStim"].getint("MERCY_BEAM_DISCONNECT_BUFFER")
         ZEN_ORB_DISCONNECT_BUFFER = config["OverStim"].getint("ZEN_ORB_DISCONNECT_BUFFER")
     except Exception as config_error:
@@ -332,6 +339,7 @@ async def run_overstim():
     # Initialize variables
     if not config_fault[0] and window["-PROGRAM_STATUS-"].get() != "INTIFACE ERROR":
         player = OverwatchStateTracker()
+        player.supported_heroes["Lucio"].crossfade_buffer_size = LUCIO_CROSSFADE_BUFFER
         player.supported_heroes["Mercy"].beam_disconnect_buffer_size = MERCY_BEAM_DISCONNECT_BUFFER
         player.supported_heroes["Zenyatta"].orb_disconnect_buffer_size = ZEN_ORB_DISCONNECT_BUFFER
     last_refresh = 0
@@ -463,6 +471,15 @@ async def run_overstim():
                         if VIBE_FOR_BEING_ORBED:
                             vibe_manager.toggle_vibe_to_condition("being orbed", BEING_ORBED_VIBE_INTENSITY, player.being_orbed)
                         
+                        # Lucio
+                        player_is_lucio = player.hero.name == "Lucio"
+
+                        if LUCIO_VIBE_FOR_HEALING_SONG:
+                            vibe_manager.toggle_pattern_to_condition("lucio healing song", LUCIO_HEALING_SONG_PATTERN, player_is_lucio and player.hero.healing_song)
+
+                        if LUCIO_VIBE_FOR_SPEED_SONG:
+                            vibe_manager.toggle_pattern_to_condition("lucio speed song", LUCIO_SPEED_SONG_PATTERN, player_is_lucio and player.hero.speed_song)
+
                         # Mercy
                         player_is_mercy = player.hero.name == "Mercy"
 

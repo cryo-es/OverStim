@@ -47,6 +47,38 @@ class Kiriko(Hero):
 class Lucio(Hero):
     def __init__(self):
         super().__init__(name="Lucio", role="Support")
+        self.crossfade_buffer_size = 6 # Overridden by config.ini
+    
+    def reset_attributes(self):
+        self.healing_song = False
+        self.speed_song = False
+        self.healing_song_buffer = 0
+        self.speed_song_buffer = 0
+    
+    def detect_song(self, owcv):
+        if owcv.detect_single("lucio_heal"):
+            self.healing_song = True
+            self.speed_song = False
+            self.healing_song_buffer = 0
+            self.speed_song_buffer = 0
+        elif self.healing_song:
+            self.healing_song_buffer += 1
+            if self.healing_song_buffer >= self.crossfade_buffer_size:
+                self.healing_song = False
+        
+        # Can we skip this section if the previous section is True?
+        if owcv.detect_single("lucio_speed"):
+            self.speed_song = True
+            self.healing_song = False
+            self.speed_song_buffer = 0
+            self.healing_song_buffer = 0
+        elif self.speed_song:
+            self.speed_song_buffer += 1
+            if self.speed_song_buffer >= self.crossfade_buffer_size:
+                self.speed_song = False
+    
+    def detect_all(self, owcv):
+        self.detect_song(owcv)
 
 
 class Mercy(Hero):

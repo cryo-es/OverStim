@@ -20,6 +20,8 @@ class OverwatchStateTracker:
             "brigitte_weapon": [958, 974, 1697, 1723],
             "kiriko_weapon": [964, 969, 1682, 1719],
             "lucio_weapon": [958, 968, 1702, 1742],
+            "lucio_heal": [668, 698, 796, 824],
+            "lucio_speed": [668, 698, 1093, 1126],
             "mercy_staff": [958, 974, 1768, 1789],
             "mercy_pistol": [946, 958, 1669, 1709],
             "mercy_pistol_ult": [945, 960, 1669, 1697], # Pistol icon changes during ult
