@@ -23,7 +23,7 @@ def resource_path(relative_path):
 def kill_other_overstim_instances():
     current_pid = os.getpid()
     for p in ps.process_iter():
-        is_instance_of_overstim = re.search("OverStim_v\d{1,3}\.\d{1,3}\.\d{1,3}\.exe$", p.name())
+        is_instance_of_overstim = re.search("OverStim_v\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.exe$", p.name())
         if is_instance_of_overstim:
             is_this_instance = (p.pid == current_pid)
             if not is_this_instance:
@@ -162,8 +162,12 @@ class VibeManager:
         elif not condition and vibe_exists_for_trigger:
             self.remove_vibe_by_trigger(trigger)
 
-    def toggle_pattern_to_condition(self, trigger, intensity, condition):
-        self.toggle_vibe_to_condition(trigger, intensity, condition)
+    def toggle_pattern_to_condition(self, trigger, pattern, condition):
+        vibe_exists_for_trigger = self.vibe_exists_for_trigger(trigger)
+        if condition and not vibe_exists_for_trigger:
+            self.add_permanent_pattern(pattern, trigger)
+        elif not condition and vibe_exists_for_trigger:
+            self.remove_vibe_by_trigger(trigger)
 
     def clear_vibes(self, triggers=None):
         if triggers is None:
@@ -328,8 +332,8 @@ async def run_overstim():
     # Initialize variables
     if not config_fault[0] and window["-PROGRAM_STATUS-"].get() != "INTIFACE ERROR":
         player = OverwatchStateTracker()
-        player.mercy_beam_disconnect_buffer_size = MERCY_BEAM_DISCONNECT_BUFFER
-        player.zen_orb_disconnect_buffer_size = ZEN_ORB_DISCONNECT_BUFFER
+        player.supported_heroes["Mercy"].beam_disconnect_buffer_size = MERCY_BEAM_DISCONNECT_BUFFER
+        player.supported_heroes["Zenyatta"].orb_disconnect_buffer_size = ZEN_ORB_DISCONNECT_BUFFER
     last_refresh = 0
     device_count = 0
 
@@ -450,7 +454,7 @@ async def run_overstim():
                                 vibe_manager.add_timed_vibe(player.new_assists * ASSIST_VIBE_INTENSITY, "assist", ASSIST_VIBE_DURATION)
 
                         if VIBE_FOR_SAVE:
-                            if player.new_saves > 0 and not player.mercy_resurrecting:
+                            if player.new_saves > 0 and (player.hero.name != "Mercy" or (player.hero.name == "Mercy" and not player.hero.resurrecting)):
                                 vibe_manager.add_timed_vibe(player.new_saves * SAVE_VIBE_INTENSITY, "save", SAVE_VIBE_DURATION)
 
                         if VIBE_FOR_BEING_BEAMED:
@@ -458,26 +462,30 @@ async def run_overstim():
 
                         if VIBE_FOR_BEING_ORBED:
                             vibe_manager.toggle_vibe_to_condition("being orbed", BEING_ORBED_VIBE_INTENSITY, player.being_orbed)
-
+                        
                         # Mercy
+                        player_is_mercy = player.hero.name == "Mercy"
+
                         if MERCY_VIBE_FOR_RESURRECT:
-                            if player.mercy_resurrecting and not vibe_manager.vibe_for_trigger_created_within_seconds("mercy resurrect", 3):
+                            if player_is_mercy and player.hero.resurrecting and not vibe_manager.vibe_for_trigger_created_within_seconds("mercy resurrect", 3):
                                 vibe_manager.add_timed_vibe(MERCY_RESURRECT_VIBE_INTENSITY, "mercy resurrect", MERCY_RESURRECT_VIBE_DURATION)
 
                         if MERCY_VIBE_FOR_HEAL_BEAM:
-                            vibe_manager.toggle_vibe_to_condition("mercy heal beam", MERCY_HEAL_BEAM_VIBE_INTENSITY, player.mercy_heal_beam)
+                            vibe_manager.toggle_vibe_to_condition("mercy heal beam", MERCY_HEAL_BEAM_VIBE_INTENSITY, player_is_mercy and player.hero.heal_beam)
 
                         if MERCY_VIBE_FOR_DAMAGE_BEAM:
-                            vibe_manager.toggle_vibe_to_condition("mercy damage beam", MERCY_DAMAGE_BEAM_VIBE_INTENSITY, player.mercy_damage_beam)
-
+                            vibe_manager.toggle_vibe_to_condition("mercy damage beam", MERCY_DAMAGE_BEAM_VIBE_INTENSITY, player_is_mercy and player.hero.damage_beam)
+                        
                         # Zenyatta
+                        player_is_zenyatta = player.hero.name == "Zenyatta"
+
                         if ZEN_VIBE_FOR_HARMONY_ORB:
-                            vibe_manager.toggle_vibe_to_condition("zen harmony orb", ZEN_HARMONY_ORB_VIBE_INTENSITY, player.zen_harmony_orb)
+                            vibe_manager.toggle_vibe_to_condition("zen harmony orb", ZEN_HARMONY_ORB_VIBE_INTENSITY, player_is_zenyatta and player.hero.harmony_orb)
 
                         if ZEN_VIBE_FOR_DISCORD_ORB:
-                            vibe_manager.toggle_vibe_to_condition("zen discord orb", ZEN_DISCORD_ORB_VIBE_INTENSITY, player.zen_discord_orb)
+                            vibe_manager.toggle_vibe_to_condition("zen discord orb", ZEN_DISCORD_ORB_VIBE_INTENSITY, player_is_zenyatta and player.hero.discord_orb)
 
-                    if player.hero_auto_detect and player.detected_hero != player.hero:
+                    if player.hero_auto_detect and player.detected_hero != player.hero.name:
                         print(f"Hero switch detected: {player.detected_hero}")
                         window["-HERO_SELECTOR-"].update(player.detected_hero)
                         player.switch_hero(player.detected_hero)

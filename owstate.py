@@ -1,6 +1,7 @@
 import time
 
 from owcv import ComputerVision
+import heroes
 
 
 class OverwatchStateTracker:
@@ -25,17 +26,26 @@ class OverwatchStateTracker:
             "mercy_heal_beam": [672, 706, 807, 841],
             "mercy_damage_beam": [673, 705, 1080, 1112],
             "mercy_resurrect_cd": [920, 1000, 1570, 1655],
-            "zen_weapon": [966, 979, 1717, 1731],
-            "zen_harmony": [954, 986, 738, 762],
-            "zen_discord": [954, 985, 1157, 1182],
+            "zenyatta_weapon": [966, 979, 1717, 1731],
+            "zenyatta_harmony": [954, 986, 738, 762],
+            "zenyatta_discord": [954, 985, 1157, 1182],
         }
         to_mask = [
         ]
         self.owcv = ComputerVision(coords, to_mask)
         self.current_time = 0
-        self.hero = "Other"
+        self.supported_heroes = {
+            "Baptiste": heroes.Baptiste(),
+            "Brigitte": heroes.Brigitte(),
+            "Kiriko": heroes.Kiriko(),
+            "Lucio": heroes.Lucio(),
+            "Mercy": heroes.Mercy(),
+            "Zenyatta": heroes.Zenyatta()
+        }
+        self.hero = heroes.Other()
         self.detected_hero = "Other"
         self.detected_hero_time = 0
+        self.last_hero_detection_attempt_time = 0
         self.hero_auto_detect = True
         self.in_killcam = False
         self.death_spectating = False
@@ -48,22 +58,6 @@ class OverwatchStateTracker:
         self.being_beamed = False
         self.being_orbed = False
         self.hacked = False
-
-        # Mercy-specific attributes
-        self.mercy_heal_beam = False
-        self.mercy_damage_beam = False
-        self.mercy_resurrecting = False
-        self.mercy_heal_beam_buffer = 0
-        self.mercy_damage_beam_buffer = 0
-        self.mercy_beam_disconnect_buffer_size = 8
-
-        # Zenyatta-specific attributes
-        self.zen_harmony_orb = False
-        self.zen_discord_orb = False
-        self.zen_harmony_orb_buffer = 0
-        self.zen_discord_orb_buffer = 0
-        # Orbs take up to 0.8s to switch targets at max range (w/ ~40ms RTT)
-        self.zen_orb_disconnect_buffer_size = 30
 
     def refresh(self, capture_frame_only=False):
         self.owcv.capture_frame()
@@ -101,19 +95,30 @@ class OverwatchStateTracker:
 
             self.hacked = self.owcv.detect_single("hacked")
 
-            if self.hero == "Mercy":
-                self.detect_mercy_beams()
-
+            if self.hero.name == "Other":
+                pass
+            elif self.hero.name == "Mercy":
+                self.hero.detect_beams(self.owcv)
                 if self.count_notifs_of_type("save") > 0:
-                    self.mercy_resurrecting = self.owcv.detect_single("mercy_resurrect_cd")
+                    self.hero.detect_resurrect(self.owcv)
+            else:
+                self.hero.detect_all(self.owcv)
 
-            elif self.hero == "Zenyatta":
-                self.detect_zen_orbs()
-
-            # Detect hero swaps for 0.1 second every 3 seconds
-            current_second = self.current_time - int(self.current_time / 10) * 10
-            if self.hero_auto_detect and int(current_second) % 3 == 0 and current_second % 1 < 0.1:
-                self.detect_hero()
+            if self.hero_auto_detect:
+                # Check for current hero once per second.
+                # If not found after 3 seconds, check for every hero each second (starting with heroes in the same role).
+                # If not found after 6 seconds, switch to other.
+                time_since_successful_hero_detection = self.current_time - self.detected_hero_time
+                time_since_attempted_hero_detection = self.current_time - self.last_hero_detection_attempt_time
+                if time_since_attempted_hero_detection >= 1:
+                    if self.hero.name == "Other":
+                        if time_since_attempted_hero_detection >= 2:
+                            self.detect_hero() # Detect all heroes
+                    else:
+                        if time_since_successful_hero_detection >= 4:
+                            self.detect_hero(prioritize_current_role=True) # Detect all heroes, starting with same role
+                        else:
+                            self.detect_hero(current_hero_only=True) # Detect just self.hero
 
         # If player is dead:
         else:
@@ -122,55 +127,37 @@ class OverwatchStateTracker:
                 self.being_beamed = False
                 self.being_orbed = False
                 self.hacked = False
-                # Add a way to remove this duplication of code (repeats in switch_hero).
-                # Probably, each hero should be a class and should have a method to zero its attributes. Instances could saved as self.mercy, self.zenyatta, etc. Or just as self.current_hero.
-                if self.hero == "Mercy":
-                    self.mercy_heal_beam = False
-                    self.mercy_damage_beam = False
-                    self.mercy_resurrecting = False
-                    self.mercy_heal_beam_buffer = 0
-                    self.mercy_damage_beam_buffer = 0
-                elif self.hero == "Zenyatta":
-                    self.zen_harmony_orb = False
-                    self.zen_discord_orb = False
-                    self.zen_harmony_orb_buffer = 0
-                    self.zen_discord_orb_buffer = 0
+                self.hero.reset_attributes()
 
-    def detect_hero(self):
+    def detect_hero(self, current_hero_only=False, prioritize_current_role=False):
         hero_detected = False
-        heroes = {
-            "zen_weapon": "Zenyatta",
-            "mercy_staff": "Mercy",
-            "mercy_pistol": "Mercy",
-            "mercy_pistol_ult": "Mercy",
-            "baptiste_weapon": "Baptiste",
-            "brigitte_weapon": "Brigitte",
-            "kiriko_weapon": "Kiriko",
-            "lucio_weapon": "Lucio",
-        }
-        for hero_weapon, hero_name in heroes.items():
-            if self.owcv.detect_single(hero_weapon, threshold=0.97):
-                self.detected_hero = hero_name
+        if current_hero_only:
+            if self.hero.detect_hero(self.owcv):
                 self.detected_hero_time = self.current_time
                 hero_detected = True
-                break
+        else:
+            if prioritize_current_role:
+                heroes_to_detect = self.get_supported_heroes_prioritizing_current_role()
+            else:
+                heroes_to_detect = self.supported_heroes
+            for hero in heroes_to_detect.values():
+                if hero.detect_hero(self.owcv):
+                    self.detected_hero = hero.name
+                    self.detected_hero_time = self.current_time
+                    hero_detected = True
+                    break
         # If no supported hero has been detected within the last 8 seconds:
-        if not hero_detected and self.detected_hero != "Other" and self.current_time > self.detected_hero_time + 8:
+        time_since_successful_hero_detection = self.current_time - self.detected_hero_time
+        if not hero_detected and self.detected_hero != "Other" and time_since_successful_hero_detection >= 6:
             self.detected_hero = "Other"
+        self.last_hero_detection_attempt_time = self.current_time
 
     def switch_hero(self, hero_name):
-        if self.hero == "Mercy":
-            self.mercy_heal_beam = False
-            self.mercy_damage_beam = False
-            self.mercy_resurrecting = False
-            self.mercy_heal_beam_buffer = 0
-            self.mercy_damage_beam_buffer = 0
-        elif self.hero == "Zenyatta":
-            self.zen_harmony_orb = False
-            self.zen_discord_orb = False
-            self.zen_harmony_orb_buffer = 0
-            self.zen_discord_orb_buffer = 0
-        self.hero = hero_name
+        self.hero.reset_attributes()
+        if hero_name == "Other":
+            self.hero = heroes.Other()
+        else:
+            self.hero = self.supported_heroes[hero_name]
 
     def detect_new_notifs(self, notif_type):
         if self.total_new_notifs >= 3:
@@ -204,46 +191,15 @@ class OverwatchStateTracker:
             del self.notifs[0]
         self.notifs.append([notif_type, self.current_time + 2.705])
 
-    def detect_mercy_beams(self):
-        if self.owcv.detect_single("mercy_heal_beam"):
-            self.mercy_heal_beam_buffer = 0
-            self.mercy_heal_beam = True
-            self.mercy_damage_beam = False
-            self.mercy_damage_beam_buffer = 0
-        elif self.mercy_heal_beam:
-            self.mercy_heal_beam_buffer += 1
-            if self.mercy_heal_beam_buffer == self.mercy_beam_disconnect_buffer_size:
-                self.mercy_heal_beam = False
-
-        if self.owcv.detect_single("mercy_damage_beam"):
-            self.mercy_damage_beam_buffer = 0
-            self.mercy_damage_beam = True
-            self.mercy_heal_beam = False
-            self.mercy_heal_beam_buffer = 0
-        elif self.mercy_damage_beam:
-            self.mercy_damage_beam_buffer += 1
-            if self.mercy_damage_beam_buffer == self.mercy_beam_disconnect_buffer_size:
-                self.mercy_damage_beam = False
-
-    def detect_zen_orbs(self):
-        if self.owcv.detect_single("zen_harmony"):
-            self.zen_harmony_orb_buffer = 0
-            self.zen_harmony_orb = True
-        elif self.zen_harmony_orb:
-            self.zen_harmony_orb_buffer += 1
-            if self.zen_harmony_orb_buffer == self.zen_orb_disconnect_buffer_size:
-                self.zen_harmony_orb = False
-
-        if self.owcv.detect_single("zen_discord"):
-            self.zen_discord_orb_buffer = 0
-            self.zen_discord_orb = True
-        elif self.zen_discord_orb:
-            self.zen_discord_orb_buffer += 1
-            if self.zen_discord_orb_buffer == self.zen_orb_disconnect_buffer_size:
-                self.zen_discord_orb = False
-
     def start_tracking(self, refresh_rate):
         self.owcv.start_capturing(refresh_rate)
 
     def stop_tracking(self):
         self.owcv.stop_capturing()
+
+    def get_supported_heroes_prioritizing_current_role(self):
+        current_role_heroes = {name: hero for name, hero in self.supported_heroes.items() if hero.role == self.hero.role}
+        other_heroes = {name: hero for name, hero in self.supported_heroes.items() if hero.role != self.hero.role}
+        sorted_heroes = {**current_role_heroes, **other_heroes}
+
+        return sorted_heroes
