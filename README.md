@@ -9,8 +9,8 @@ Default Settings (all triggers can be disabled or have their intensities/duratio
 - **Elimination:** +30% intensity for 6 seconds
 - **Assist:** +15% intensity for 3 seconds
 - **Lucio:**
-  - **Healing song:** +20% intensity (or custom pattern) while active
-  - **Speed song:** +40% intensity (or custom pattern) while active
+  - **Healing song:** +15% intensity (or custom pattern) while active
+  - **Speed song:** +30% intensity (or custom pattern) while active
 - **Mercy:**
   - **Resurrect:** +100% intensity for 4 seconds
   - **Heal beam:** +10% intensity while active
