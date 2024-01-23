@@ -175,6 +175,11 @@ class VibeManager:
         else:
             for trigger in triggers:
                 del self.vibes[trigger]
+    
+    def clear_vibes_matching_regex(self, regex_pattern):
+        regex = re.compile(regex_pattern)
+        triggers = [trigger for trigger in self.vibes.keys() if regex.match(trigger)]
+        self.clear_vibes(triggers)
 
     async def stop_all_devices(self):
         self.stopped = True
@@ -470,41 +475,42 @@ async def run_overstim():
 
                         if VIBE_FOR_BEING_ORBED:
                             vibe_manager.toggle_vibe_to_condition("being orbed", BEING_ORBED_VIBE_INTENSITY, player.being_orbed)
+
+                        if player.hero.name == "Other":
+                            pass
                         
-                        # Lucio
-                        player_is_lucio = player.hero.name == "Lucio"
+                        elif player.hero.name == "Lucio":
 
-                        if LUCIO_VIBE_FOR_HEALING_SONG:
-                            vibe_manager.toggle_pattern_to_condition("lucio healing song", LUCIO_HEALING_SONG_PATTERN, player_is_lucio and player.hero.healing_song)
+                            if LUCIO_VIBE_FOR_HEALING_SONG:
+                                vibe_manager.toggle_pattern_to_condition("lucio healing song", LUCIO_HEALING_SONG_PATTERN, player.hero.healing_song)
 
-                        if LUCIO_VIBE_FOR_SPEED_SONG:
-                            vibe_manager.toggle_pattern_to_condition("lucio speed song", LUCIO_SPEED_SONG_PATTERN, player_is_lucio and player.hero.speed_song)
+                            if LUCIO_VIBE_FOR_SPEED_SONG:
+                                vibe_manager.toggle_pattern_to_condition("lucio speed song", LUCIO_SPEED_SONG_PATTERN, player.hero.speed_song)
 
-                        # Mercy
-                        player_is_mercy = player.hero.name == "Mercy"
+                        elif player.hero.name == "Mercy":
 
-                        if MERCY_VIBE_FOR_RESURRECT:
-                            if player_is_mercy and player.hero.resurrecting and not vibe_manager.vibe_for_trigger_created_within_seconds("mercy resurrect", 3):
-                                vibe_manager.add_timed_vibe(MERCY_RESURRECT_VIBE_INTENSITY, "mercy resurrect", MERCY_RESURRECT_VIBE_DURATION)
+                            if MERCY_VIBE_FOR_RESURRECT:
+                                if player.hero.resurrecting and not vibe_manager.vibe_for_trigger_created_within_seconds("mercy resurrect", 3):
+                                    vibe_manager.add_timed_vibe(MERCY_RESURRECT_VIBE_INTENSITY, "mercy resurrect", MERCY_RESURRECT_VIBE_DURATION)
 
-                        if MERCY_VIBE_FOR_HEAL_BEAM:
-                            vibe_manager.toggle_vibe_to_condition("mercy heal beam", MERCY_HEAL_BEAM_VIBE_INTENSITY, player_is_mercy and player.hero.heal_beam)
+                            if MERCY_VIBE_FOR_HEAL_BEAM:
+                                vibe_manager.toggle_vibe_to_condition("mercy heal beam", MERCY_HEAL_BEAM_VIBE_INTENSITY, player.hero.heal_beam)
 
-                        if MERCY_VIBE_FOR_DAMAGE_BEAM:
-                            vibe_manager.toggle_vibe_to_condition("mercy damage beam", MERCY_DAMAGE_BEAM_VIBE_INTENSITY, player_is_mercy and player.hero.damage_beam)
+                            if MERCY_VIBE_FOR_DAMAGE_BEAM:
+                                vibe_manager.toggle_vibe_to_condition("mercy damage beam", MERCY_DAMAGE_BEAM_VIBE_INTENSITY, player.hero.damage_beam)
                         
-                        # Zenyatta
-                        player_is_zenyatta = player.hero.name == "Zenyatta"
+                        elif player.hero.name == "Zenyatta":
 
-                        if ZEN_VIBE_FOR_HARMONY_ORB:
-                            vibe_manager.toggle_vibe_to_condition("zen harmony orb", ZEN_HARMONY_ORB_VIBE_INTENSITY, player_is_zenyatta and player.hero.harmony_orb)
+                            if ZEN_VIBE_FOR_HARMONY_ORB:
+                                vibe_manager.toggle_vibe_to_condition("zenyatta harmony orb", ZEN_HARMONY_ORB_VIBE_INTENSITY, player.hero.harmony_orb)
 
-                        if ZEN_VIBE_FOR_DISCORD_ORB:
-                            vibe_manager.toggle_vibe_to_condition("zen discord orb", ZEN_DISCORD_ORB_VIBE_INTENSITY, player_is_zenyatta and player.hero.discord_orb)
+                            if ZEN_VIBE_FOR_DISCORD_ORB:
+                                vibe_manager.toggle_vibe_to_condition("zenyatta discord orb", ZEN_DISCORD_ORB_VIBE_INTENSITY, player.hero.discord_orb)
 
                     if player.hero_auto_detect and player.detected_hero != player.hero.name:
                         print(f"Hero switch detected: {player.detected_hero}")
                         window["-HERO_SELECTOR-"].update(player.detected_hero)
+                        vibe_manager.clear_vibes_matching_regex(f"^{player.hero.name.lower()}")
                         player.switch_hero(player.detected_hero)
 
             if event == sg.WIN_CLOSED or event == "Quit":
