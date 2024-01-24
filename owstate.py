@@ -7,9 +7,9 @@ import heroes
 class OverwatchStateTracker:
     def __init__(self):
         coords = {
-            "elimination": [749, 850, 832, 976],
-            "assist": [749, 850, 832, 976],
-            "save": [749, 850, 727, 922],
+            "elimination": [751, 779, 833, 975],
+            "assist": [751, 779, 833, 975],
+            "save": [751, 779, 729, 923],
             "killcam": [89, 107, 41, 69],
             "death_spec": [66, 86, 1416, 1574],
             "being_beamed": [763, 807, 461, 508],
@@ -53,10 +53,7 @@ class OverwatchStateTracker:
         self.death_spectating = False
         self.is_dead = False
         self.notifs = []
-        self.total_new_notifs = 0
-        self.new_eliminations = 0
-        self.new_assists = 0
-        self.new_saves = 0
+        self.new_notifs = {}
         self.being_beamed = False
         self.being_orbed = False
         self.hacked = False
@@ -69,11 +66,7 @@ class OverwatchStateTracker:
         # TODO: Shouldn't check for things that aren't enabled in the config
         self.current_time = time.time()
         self.expire_notifs()
-
-        self.total_new_notifs = 0
-        self.new_eliminations = 0
-        self.new_assists = 0
-        self.new_saves = 0
+        self.new_notifs = {}
 
         # TODO: Find out if the player is alive (there is a period of time between death and killcam, should handle that with "you were eliminated" message and a timer)
         self.in_killcam = self.owcv.detect_single("killcam")
@@ -85,11 +78,7 @@ class OverwatchStateTracker:
             if self.is_dead:
                 self.is_dead = False
 
-            self.new_eliminations = self.detect_new_notifs("elimination")
-
-            self.new_assists = self.detect_new_notifs("assist")
-
-            self.new_saves = self.detect_new_notifs("save")
+            self.detect_new_notifs()
 
             self.being_beamed = self.owcv.detect_single("being_beamed")
 
@@ -101,7 +90,7 @@ class OverwatchStateTracker:
                 pass
             elif self.hero.name == "Mercy":
                 self.hero.detect_beams(self.owcv)
-                if self.count_notifs_of_type("save") > 0:
+                if self.count_notifs_of_type("save") > 0: # Could we use self.new_notifs here or is rez icon too delayed?
                     self.hero.detect_resurrect(self.owcv)
             else:
                 self.hero.detect_all(self.owcv)
@@ -161,17 +150,37 @@ class OverwatchStateTracker:
         else:
             self.hero = self.supported_heroes[hero_name]
 
-    def detect_new_notifs(self, notif_type):
-        if self.total_new_notifs >= 3:
-            return 0
-        notifs_detected = self.owcv.detect_multiple(notif_type)
-        existing_notifs = self.count_notifs_of_type(notif_type)
-        new_notifs = max(0, notifs_detected - existing_notifs)
-        for _ in range(new_notifs):
-            self.add_notif(notif_type)
-        self.total_new_notifs += new_notifs
-        return new_notifs
+    def detect_new_notifs(self):
+        # Coords are for the first row
+        all_notif_coords = {
+            "elimination": [751, 779, 833, 975],
+            "assist": [751, 779, 833, 975],
+            "save": [751, 779, 729, 923],
+        }
 
+        notifs = {}
+        for row in range(0, 2):
+            pixel_offset = row * 35 # Pixels between rows @ 1080p
+            no_notif_detected = True
+            for notif_type, notif_coords in all_notif_coords.items():
+                notif_coords[0] += pixel_offset
+                notif_coords[1] += pixel_offset
+                if self.owcv.detect_single(notif_type, coords_override=notif_coords):
+                    no_notif_detected = False
+                    notifs[notif_type] = notifs.get(notif_type, 0) + 1
+                    # If a notif was detected on this row, no need to check for other notifs on this row
+                    break
+            # If no notif was detected on this row, no need to check the next row
+            if no_notif_detected:
+                break
+        
+        for notif_type, notifs_detected in notifs.items():
+            existing_notifs = self.count_notifs_of_type(notif_type)
+            new_notifs = max(0, notifs_detected - existing_notifs)
+            for _ in range(new_notifs):
+                self.add_notif(notif_type)
+            self.new_notifs[notif_type] = new_notifs
+    
     def count_notifs_of_type(self, notif_type):
         return sum(notif[0] == notif_type for notif in self.notifs)
 

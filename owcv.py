@@ -40,11 +40,14 @@ class ComputerVision:
             screenshot = cv.resize(screenshot, (self.base_resolution["width"], self.base_resolution["height"]))
         self.frame = cv.cvtColor(screenshot, cv.COLOR_BGR2GRAY)
 
-    def crop(self, image, template_name):
-        return image[self.coords[template_name][0]:self.coords[template_name][1], self.coords[template_name][2]:self.coords[template_name][3]]
+    def crop(self, image, template_name, coords_override=None):
+        if coords_override is None:
+            return image[self.coords[template_name][0]:self.coords[template_name][1], self.coords[template_name][2]:self.coords[template_name][3]]
+        else:
+            return image[coords_override[0]:coords_override[1], coords_override[2]:coords_override[3]]
 
-    def match(self, template_name):
-        cropped_frame = self.crop(self.frame, template_name)
+    def match(self, template_name, coords_override=None):
+        cropped_frame = self.crop(self.frame, template_name, coords_override)
         if template_name in self.mask_names:
             return cv.matchTemplate(cropped_frame, self.templates[template_name], cv.TM_CCOEFF_NORMED, mask=self.masks[template_name])
         else:
@@ -55,6 +58,6 @@ class ComputerVision:
         cv.threshold(result, threshold, 255, cv.THRESH_BINARY, result)
         return len(cv.findContours(result.astype(np.uint8), cv.RETR_LIST, cv.CHAIN_APPROX_SIMPLE)[0])
 
-    def detect_single(self, template_name, threshold=0.9):
-        result = self.match(template_name)
+    def detect_single(self, template_name, threshold=0.9, coords_override=None):
+        result = self.match(template_name, coords_override)
         return np.nanmax(result) > threshold

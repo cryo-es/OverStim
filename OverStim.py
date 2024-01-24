@@ -459,16 +459,19 @@ async def run_overstim():
 
                     if not vibe_exists_for_being_hacked:
                         if VIBE_FOR_ELIM:
-                            if player.new_eliminations > 0:
-                                vibe_manager.add_timed_vibe(player.new_eliminations * ELIM_VIBE_INTENSITY, "elim", ELIM_VIBE_DURATION)
+                            new_elims = player.new_notifs.get("elimination", 0)
+                            if new_elims > 0:
+                                vibe_manager.add_timed_vibe(new_elims * ELIM_VIBE_INTENSITY, "elimination", ELIM_VIBE_DURATION)
 
                         if VIBE_FOR_ASSIST:
-                            if player.new_assists > 0:
-                                vibe_manager.add_timed_vibe(player.new_assists * ASSIST_VIBE_INTENSITY, "assist", ASSIST_VIBE_DURATION)
+                            new_assists = player.new_notifs.get("assist", 0)
+                            if new_assists > 0:
+                                vibe_manager.add_timed_vibe(new_assists * ASSIST_VIBE_INTENSITY, "assist", ASSIST_VIBE_DURATION)
 
                         if VIBE_FOR_SAVE:
-                            if player.new_saves > 0 and (player.hero.name != "Mercy" or (player.hero.name == "Mercy" and not player.hero.resurrecting)):
-                                vibe_manager.add_timed_vibe(player.new_saves * SAVE_VIBE_INTENSITY, "save", SAVE_VIBE_DURATION)
+                            new_saves = player.new_notifs.get("save", 0)
+                            if new_saves > 0 and (player.hero.name != "Mercy" or (player.hero.name == "Mercy" and not player.hero.resurrecting)):
+                                vibe_manager.add_timed_vibe(new_saves * SAVE_VIBE_INTENSITY, "save", SAVE_VIBE_DURATION)
 
                         if VIBE_FOR_BEING_BEAMED:
                             vibe_manager.toggle_vibe_to_condition("being beamed", BEING_BEAMED_VIBE_INTENSITY, player.being_beamed)
