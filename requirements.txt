@@ -1,5 +1,5 @@
 buttplug-py==0.2.0
-bettercam==1.0.0
+dxcam-cpp==0.1.1
 numpy==1.26.3
 psutil==5.9.8
 pynput==1.7.6
