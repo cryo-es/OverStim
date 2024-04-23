@@ -26,7 +26,8 @@ Optional Settings (all disabled by default):
 - **Being orbed by Zenyatta:** +30% intensity while active
 
 Known Issues:
-- Some features don't work with colourblind settings enabled.
 - Doesn't work at aspect ratios other than 16:9.
+- Some features don't work with colourblind settings enabled.
+- Some features don't work with controller keybinds (detection of some abilities, maybe more).
 - High latency to the game server causes Mercy's beam to reconnect to people slower when switching beam types. This can cause temporary gaps in vibration.
-- Only Windows is officially supported ([join the Discord](https://discord.gg/AVpcVhQQhu) if you want Linux support, one guy managed to get it working).
+- Only Windows is officially supported (I will provide limited assistance if you want to add Linux support or create a Linux version).
