@@ -310,6 +310,13 @@ async def run_overstim():
         BEING_BEAMED_VIBE_INTENSITY = config["OverStim"].getfloat("BEING_BEAMED_VIBE_INTENSITY")
         BEING_ORBED_VIBE_INTENSITY = config["OverStim"].getfloat("BEING_ORBED_VIBE_INTENSITY")
 
+        # Juno-specific constants
+        JUNO_VIBE_FOR_GLIDE_BOOST = config["OverStim"].getboolean("JUNO_VIBE_FOR_GLIDE_BOOST")
+        JUNO_GLIDE_BOOST_PATTERN = json.loads(config["OverStim"].get("JUNO_GLIDE_BOOST_PATTERN"))
+        JUNO_VIBE_FOR_PULSAR_TORPEDOES = config["OverStim"].getboolean("JUNO_VIBE_FOR_PULSAR_TORPEDOES")
+        JUNO_PULSAR_TORPEDOES_PATTERN = json.loads(config["OverStim"].get("JUNO_PULSAR_TORPEDOES_PATTERN"))
+        JUNO_PULSAR_TORPEDOES_FIRING_INTENSITY = config["OverStim"].getfloat("JUNO_PULSAR_TORPEDOES_FIRING_INTENSITY")
+
         # Lucio-specific constants
         LUCIO_VIBE_FOR_HEALING_SONG = config["OverStim"].getboolean("LUCIO_VIBE_FOR_HEALING_SONG")
         LUCIO_HEALING_SONG_PATTERN = json.loads(config["OverStim"].get("LUCIO_HEALING_SONG_PATTERN"))
@@ -481,6 +488,15 @@ async def run_overstim():
 
                         if player.hero.name == "Other":
                             pass
+
+                        elif player.hero.name == "Juno":
+
+                            if JUNO_VIBE_FOR_GLIDE_BOOST:
+                                vibe_manager.toggle_pattern_to_condition("juno glide boost", JUNO_GLIDE_BOOST_PATTERN, player.hero.glide_boost)
+                            
+                            if JUNO_VIBE_FOR_PULSAR_TORPEDOES:
+                                vibe_manager.toggle_pattern_to_condition("juno pulsar torpedoes", JUNO_PULSAR_TORPEDOES_PATTERN, player.hero.pulsar_torpedoes and not player.hero.pulsar_torpedoes_firing)
+                                vibe_manager.toggle_vibe_to_condition("juno pulsar torpedoes firing", JUNO_PULSAR_TORPEDOES_FIRING_INTENSITY, player.hero.pulsar_torpedoes_firing)
                         
                         elif player.hero.name == "Lucio":
 

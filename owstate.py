@@ -31,6 +31,10 @@ class OverwatchStateTracker:
             "zenyatta_weapon": [966, 979, 1717, 1731],
             "zenyatta_harmony": [954, 986, 738, 762],
             "zenyatta_discord": [954, 985, 1157, 1182],
+            "juno_weapon": [950, 960, 1679, 1708],
+            "juno_glide_boost": [933, 964, 1428, 1461],
+            "juno_pulsar_torpedoes": [940, 975, 1581, 1620],
+            "juno_pulsar_torpedoes_timer": [613, 645, 447, 450],
         }
         to_mask = [
         ]
@@ -39,6 +43,7 @@ class OverwatchStateTracker:
         self.supported_heroes = {
             "Baptiste": heroes.Baptiste(),
             "Brigitte": heroes.Brigitte(),
+            "Juno": heroes.Juno(),
             "Kiriko": heroes.Kiriko(),
             "Lucio": heroes.Lucio(),
             "Mercy": heroes.Mercy(),
@@ -98,7 +103,7 @@ class OverwatchStateTracker:
             if self.hero_auto_detect:
                 # Check for current hero once per second.
                 # If not found after 3 seconds, check for every hero each second (starting with heroes in the same role).
-                # If not found after 6 seconds, switch to other.
+                # If not found after 6 seconds (total), switch to Other.
                 time_since_successful_hero_detection = self.current_time - self.detected_hero_time
                 time_since_attempted_hero_detection = self.current_time - self.last_hero_detection_attempt_time
                 if time_since_attempted_hero_detection >= 1:

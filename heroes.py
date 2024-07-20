@@ -1,3 +1,6 @@
+import time
+
+
 class Hero:
     def __init__(self, name, role, weapons=None):
         self.name = name
@@ -37,6 +40,43 @@ class Baptiste(Hero):
 class Brigitte(Hero):
     def __init__(self):
         super().__init__(name="Brigitte", role="Support")
+
+
+class Juno(Hero):
+    def __init__(self):
+        super().__init__(name="Juno", role="Support")
+        self.pulsar_torpedoes_firing_lockout_duration = 0.5
+        self.pulsar_torpedoes_last_start_time = 0
+        self.pulsar_torpedoes_finish_lockout_duration = 0.3
+        self.pulsar_torpedoes_last_finish_time = 0
+    
+    def reset_attributes(self):
+        self.glide_boost = False
+        self.pulsar_torpedoes = False
+        self.pulsar_torpedoes_firing = False
+    
+    def detect_glide_boost(self, owcv):
+        self.glide_boost = owcv.detect_single("juno_glide_boost")
+
+    def detect_pulsar_torpedoes(self, owcv):
+        current_time = time.time()
+        time_since_pulsar_torpedoes_last_finished = current_time - self.pulsar_torpedoes_last_finish_time
+        if time_since_pulsar_torpedoes_last_finished > self.pulsar_torpedoes_finish_lockout_duration:
+            if owcv.detect_single("juno_pulsar_torpedoes"):
+                if not self.pulsar_torpedoes:
+                    self.pulsar_torpedoes_last_start_time = current_time
+                    self.pulsar_torpedoes = True
+                pulsar_torpedoes_time_elapsed = current_time - self.pulsar_torpedoes_last_start_time
+                if pulsar_torpedoes_time_elapsed >= self.pulsar_torpedoes_firing_lockout_duration:
+                    self.pulsar_torpedoes_firing = not owcv.detect_single("juno_pulsar_torpedoes_timer")
+            elif self.pulsar_torpedoes and not owcv.detect_single("juno_pulsar_torpedoes_timer"):
+                self.pulsar_torpedoes_last_finish_time = current_time
+                self.pulsar_torpedoes = False
+                self.pulsar_torpedoes_firing = False
+    
+    def detect_all(self, owcv):
+        self.detect_glide_boost(owcv)
+        self.detect_pulsar_torpedoes(owcv)
 
 
 class Kiriko(Hero):
