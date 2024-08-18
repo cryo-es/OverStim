@@ -36,6 +36,19 @@ class ComputerVision:
 
     def capture_frame(self):
         screenshot = self.screen.get_latest_frame()
+        # crop screenshots of incorrect aspect ratios
+        target_ratio = self.base_resolution["width"] / self.base_resolution["height"]
+        # crop width of screen grab, e.g. for 21:9 ultrawide aspect ratio
+        max_width = int(screenshot.shape[0] * target_ratio)
+        if screenshot.shape[1] > max_width:
+            crop_x = (screenshot.shape[1] - max_width) // 2
+            screenshot = screenshot[:, crop_x:-crop_x]
+        # crop height of screen grab, e.g. for 4:3 standard aspect ratio
+        max_height = int(screenshot.shape[1] / target_ratio)
+        if screenshot.shape[0] > max_height:
+            crop_y = (screenshot.shape[0] - max_height) // 2
+            screenshot = screenshot[crop_y:-crop_y]
+        # resize screenshot of incorrect resolution
         if self.final_resolution != self.base_resolution:
             screenshot = cv.resize(screenshot, (self.base_resolution["width"], self.base_resolution["height"]))
         self.frame = cv.cvtColor(screenshot, cv.COLOR_BGR2GRAY)
