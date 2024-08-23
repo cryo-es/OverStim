@@ -492,7 +492,10 @@ async def run_overstim():
                         elif player.hero.name == "Juno":
 
                             if JUNO_VIBE_FOR_GLIDE_BOOST:
-                                vibe_manager.toggle_pattern_to_condition("juno glide boost", JUNO_GLIDE_BOOST_PATTERN, player.hero.glide_boost)
+                            boost_time = 4
+                            if JUNO_VIBE_FOR_GLIDE_BOOST:
+                                if player.hero.glide_boost == True and vibe_manager.vibe_for_trigger_created_within_seconds("juno glide boost", 1) == False:       
+                                    vibe_manager.add_timed_pattern(JUNO_GLIDE_BOOST_PATTERN,"juno glide boost",boost_time)
                             
                             if JUNO_VIBE_FOR_PULSAR_TORPEDOES:
                                 vibe_manager.toggle_pattern_to_condition("juno pulsar torpedoes", JUNO_PULSAR_TORPEDOES_PATTERN, player.hero.pulsar_torpedoes and not player.hero.pulsar_torpedoes_firing)
@@ -553,7 +556,7 @@ async def main():
 
     # Define constants
     OUTPUT_WINDOW_ENABLED = True
-    HEROES = ["Other", "Baptiste", "Brigitte", "Kiriko", "Lucio", "Mercy", "Zenyatta"]
+    HEROES = ["Other", "Baptiste", "Brigitte", "Kiriko", "Lucio", "Mercy", "Zenyatta","Juno"]
     # HEROES = [
     #         "DVa", "Doomfist", "JunkerQueen", "Orisa", "Rammatra", "Reinhardt", "Roadhog", "Sigma", "Winston", "WreckingBall", "Zarya",
     #         "Ashe", "Bastion", "Cassidy", "Echo", "Genji", "Hanzo", "Junkrat", "Mei", "Pharah", "Reaper", "Sojourn", "Soldier76", "Sombra", "Symmetra", "Torbjorn", "Tracer", "Widowmaker",
