@@ -553,7 +553,7 @@ async def main():
 
     # Define constants
     OUTPUT_WINDOW_ENABLED = True
-    HEROES = ["Other", "Baptiste", "Brigitte", "Kiriko", "Lucio", "Mercy", "Zenyatta"]
+    HEROES = ["Other", "Baptiste", "Brigitte", "Juno", "Kiriko", "Lucio", "Mercy", "Zenyatta"]
     # HEROES = [
     #         "DVa", "Doomfist", "JunkerQueen", "Orisa", "Rammatra", "Reinhardt", "Roadhog", "Sigma", "Winston", "WreckingBall", "Zarya",
     #         "Ashe", "Bastion", "Cassidy", "Echo", "Genji", "Hanzo", "Junkrat", "Mei", "Pharah", "Reaper", "Sojourn", "Soldier76", "Sombra", "Symmetra", "Torbjorn", "Tracer", "Widowmaker",
