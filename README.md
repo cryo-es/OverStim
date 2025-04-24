@@ -1,3 +1,6 @@
+# Note:
+Many parts of the project are currently broken due to lack of maintenance. This is due to a combination of me being busy IRL and being focused on a rewrite. Another contributor has forked the project with a view to maintain and improve it in the meantime. I will link to their repo once they're ready for that. In the meantime, an alternative is Playful Plugins by Furi (PP). You can learn about PP, the OverStim fork, and the OverStim rewrite in [the Discord server](https://discord.gg/AVpcVhQQhu).
+
 # OverStim
 [Click here for download instructions](https://github.com/cryo-es/OverStim/releases)
 
