@@ -1,5 +1,6 @@
-# Note:
-Many parts of the project are currently broken due to lack of maintenance. This is due to a combination of me being busy IRL and being focused on a rewrite. Another contributor has forked the project with a view to maintain and improve it in the meantime. I will link to their repo once they're ready for that. In the meantime, an alternative is Playful Plugins by Furi (PP). You can learn about PP, the OverStim fork, and the OverStim rewrite in [the Discord server](https://discord.gg/AVpcVhQQhu).
+# Attention:
+Due to my personal circumstances, another contributor has stepped up to become the primary maintainer of the project. They have already begun releasing updates for OverStim (including a new UI and more) over at [their Codeberg repo](https://codeberg.org/pharmercy/OverStim). Please go there for the latest version.
+Also consider joining [the community Discord server](https://discord.gg/AVpcVhQQhu), where you'll find the developers and users of this and several other adult toy integration mods (including another Overwatch one).
 
 # OverStim
 [Click here for download instructions](https://github.com/cryo-es/OverStim/releases)
