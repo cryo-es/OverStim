@@ -1,6 +1,6 @@
-# Attention:
-Another contributor has stepped up to become the primary maintainer of this project. They have released multiple new updates for OverStim (including a new UI and more) over at [the new OverStim website](https://overstim.pharmercy.de) and [their Codeberg repo](https://codeberg.org/pharmercy/OverStim). Please go there for the latest version.
-Also consider joining [the new OverStim Discord server](https://discord.gg/GMd6mKvvsm), where you can get support, vote on new features, and engage with the community.
+# Attention (read this):
+This page is for an old version of OverStim. Another contributor has stepped up to become the primary maintainer of this project. They have released multiple fixes and new updates for OverStim (including a new UI and more) over at [the new OverStim website](https://overstim.pharmercy.de) and [their Codeberg repo](https://codeberg.org/pharmercy/OverStim). Please go there for the latest version.
+Also consider joining [the new OverStim Discord server](https://discord.gg/GMd6mKvvsm), where you can get support, vote on new features/heroes, and engage with the community.
 
 # OverStim
 [Click here for download instructions](https://github.com/cryo-es/OverStim/releases)
@@ -30,8 +30,4 @@ Optional Settings (all disabled by default):
 - **Being orbed by Zenyatta:** +30% intensity while active
 
 Known Issues:
-- Doesn't work at aspect ratios other than 16:9.
-- Some features don't work with colourblind settings enabled.
-- Some features don't work with controller keybinds (detection of some abilities, maybe more).
-- High latency to the game server causes Mercy's beam to reconnect to people slower when switching beam types. This can cause temporary gaps in vibration.
-- Only Windows is officially supported (I will provide limited assistance if you want to add Linux support or create a Linux version).
+- This page is for an old version of OverStim. [Click here](https://codeberg.org/pharmercy/OverStim#overstim) to find the latest version at its new home.
