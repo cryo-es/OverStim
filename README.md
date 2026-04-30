@@ -1,5 +1,9 @@
 # Attention (read this):
-This page is for an old version of OverStim. Another contributor has stepped up to become the primary maintainer of this project. They have released multiple fixes and new updates for OverStim (including a new UI and more) over at [the new OverStim website](https://overstim.pharmercy.de) and [their Codeberg repo](https://codeberg.org/pharmercy/OverStim#overstim). Please go there for the latest version.
+
+> [!IMPORTANT]
+> Download and guides → [OverStim website](https://overstim.pharmercy.de/)
+
+This GitHub page is for an old version of OverStim. Another contributor has stepped up to become the primary maintainer of this project. They have released multiple fixes and new updates for OverStim (including a new UI and more) over at [the new OverStim website](https://overstim.pharmercy.de) and [their Codeberg repo](https://codeberg.org/pharmercy/OverStim#overstim). Please go there for the latest version.
 Also consider joining [the new OverStim Discord server](https://discord.gg/GMd6mKvvsm), where you can get support, vote on new features/heroes, and engage with the community.
 
 # OverStim
